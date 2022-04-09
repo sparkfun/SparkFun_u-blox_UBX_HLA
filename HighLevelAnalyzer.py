@@ -45,8 +45,10 @@ class Hla(HighLevelAnalyzer):
 
     # UBX ID
     UBX_ID = {
+        # ACK
         (0x05, 0x01): "ACK",
         (0x05, 0x00): "NACK",
+        # NAV
         (0x01, 0x22): "CLOCK",
         (0x01, 0x36): "COV",
         (0x01, 0x04): "DOP",
@@ -214,7 +216,7 @@ class Hla(HighLevelAnalyzer):
                 return None
 
         # Check for sync char 2
-        if (self.ubx_state == self.looking_for_sync_2):
+        elif (self.ubx_state == self.looking_for_sync_2):
             if (value == self.sync_char_2):
                 self.ubx_state = self.looking_for_class
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': char})
@@ -223,7 +225,7 @@ class Hla(HighLevelAnalyzer):
                 return None
 
         # Check for Class
-        if (self.ubx_state == self.looking_for_class):
+        elif (self.ubx_state == self.looking_for_class):
             self.ubx_state = self.looking_for_ID
             self.msg_class = value
             self.sum1 = 0 # Clear the checksum
@@ -235,7 +237,7 @@ class Hla(HighLevelAnalyzer):
                 return None
 
         # Check for ID
-        if (self.ubx_state == self.looking_for_ID):
+        elif (self.ubx_state == self.looking_for_ID):
             self.ubx_state = self.looking_for_length_LSB
             self.ID = value
             self.csum(value)
@@ -245,22 +247,24 @@ class Hla(HighLevelAnalyzer):
                 return None
 
         # Check for Length LSB
-        if (self.ubx_state == self.looking_for_length_LSB):
+        elif (self.ubx_state == self.looking_for_length_LSB):
             self.ubx_state = self.looking_for_length_MSB
-            self.length = value
+            self.length_LSB = value
             self.csum(value)
-            return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '.'})
+            self.start_time = frame.start_time
+            return None
 
         # Check for Length MSB
-        if (self.ubx_state == self.looking_for_length_MSB):
+        elif (self.ubx_state == self.looking_for_length_MSB):
             self.ubx_state = self.processing_payload
-            self.length += value * 256
+            self.length_MSB = value
+            self.length = self.length_MSB * 256 + self.length_LSB
             self.bytes_to_process = self.length
             self.csum(value)
-            return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'Length '+str(self.length)})
+            return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'Length '+str(self.length)})
 
         # Process payload
-        if (self.ubx_state == self.processing_payload):
+        elif (self.ubx_state == self.processing_payload):
             if (self.bytes_to_process > 0):
                 self.csum(value)
                 self.bytes_to_process -= 1
@@ -269,7 +273,7 @@ class Hla(HighLevelAnalyzer):
                 self.ubx_state = self.looking_for_checksum_A
 
         # Checksum A
-        if (self.ubx_state == self.looking_for_checksum_A):
+        elif (self.ubx_state == self.looking_for_checksum_A):
             if (value != self.sum1):
                 self.ubx_state = self.sync_lost
                 self.clear_stored_message(frame)
@@ -279,7 +283,7 @@ class Hla(HighLevelAnalyzer):
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CK_A"})
 
         # Checksum B
-        if (self.ubx_state == self.looking_for_checksum_B):
+        elif (self.ubx_state == self.looking_for_checksum_B):
             if (value != self.sum2):
                 self.ubx_state = self.sync_lost
                 self.clear_stored_message(frame)
@@ -289,7 +293,9 @@ class Hla(HighLevelAnalyzer):
                 self.clear_stored_message(frame)
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CK_B"})
 
-            
-
+        # This should never happen...
+        else:
+            self.clear_stored_message(frame)
+            return None
 
 
