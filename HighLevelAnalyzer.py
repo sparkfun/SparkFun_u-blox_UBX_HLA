@@ -137,6 +137,85 @@ class Hla(HighLevelAnalyzer):
         self.sum1 = self.sum1 & 0xFF
         self.sum2 = self.sum2 & 0xFF
 
+    def analyze_UBX(self, frame, value):
+        '''
+        Analyze frame according to the UBX interface description
+
+        v0.0.1 : Support UBX-NAV-PVT
+        '''
+
+        class_key_list = list(self.UBX_CLASS.keys())
+        class_val_list = list(self.UBX_CLASS.values())
+
+        id_key_list = list(self.UBX_ID.keys())
+        id_val_list = list(self.UBX_ID.values())
+
+        class_position = class_val_list.index("NAV")
+        if (self.msg_class == class_key_list[class_position]): # if self.msg_class == NAV
+
+            id_position = id_val_list.index("PVT")
+            if ((self.msg_class,self.ID) == id_key_list[id_position]): # if self.ID == PVT
+
+                if (self.this_is_byte == 0):
+                    self.field = value
+                    self.start_time = frame.start_time
+                    return None
+                elif (self.this_is_byte == 1):
+                    self.field += value << 8
+                    return None
+                elif (self.this_is_byte == 2):
+                    self.field += value << 16
+                    return None
+                elif (self.this_is_byte == 3):
+                    self.field += value << 24
+                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'iTOW ' + str(self.field)})
+                elif (self.this_is_byte == 4):
+                    self.field = value
+                    self.start_time = frame.start_time
+                    return None
+                elif (self.this_is_byte == 5):
+                    self.field += value << 8
+                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'year ' + str(self.field)})
+                elif (self.this_is_byte == 6):
+                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'month ' + str(value)})
+                elif (self.this_is_byte == 7):
+                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'day ' + str(value)})
+                elif (self.this_is_byte == 8):
+                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'hour ' + str(value)})
+                elif (self.this_is_byte == 9):
+                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'min ' + str(value)})
+                elif (self.this_is_byte == 10):
+                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'sec ' + str(value)})
+                elif (self.this_is_byte == 11):
+                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'valid ' + hex(value)})
+                elif (self.this_is_byte == 12):
+                    self.field = value
+                    self.start_time = frame.start_time
+                    return None
+                elif (self.this_is_byte == 13):
+                    self.field += value << 8
+                    return None
+                elif (self.this_is_byte == 14):
+                    self.field += value << 16
+                    return None
+                elif (self.this_is_byte == 15):
+                    self.field += value << 24
+                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'tAcc ' + str(self.field)})
+                elif (self.this_is_byte == 16):
+                    self.field = value
+                    self.start_time = frame.start_time
+                    return None
+                elif (self.this_is_byte == 17):
+                    self.field += value << 8
+                    return None
+                elif (self.this_is_byte == 18):
+                    self.field += value << 16
+                    return None
+                elif (self.this_is_byte == 19):
+                    self.field += value << 24
+                    self.field = -(self.field & 0x80000000) | (self.field & 0x7FFFFFFF)
+                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'nano ' + str(self.field)})
+
     def decode(self, frame: AnalyzerFrame):
 
         maximum_delay = GraphTimeDelta(0.1) # TODO: set maximum_delay according to baud rate / clock speed and message length
@@ -258,22 +337,24 @@ class Hla(HighLevelAnalyzer):
         elif (self.ubx_state == self.looking_for_length_MSB):
             self.ubx_state = self.processing_payload
             self.length_MSB = value
-            self.length = self.length_MSB * 256 + self.length_LSB
-            self.bytes_to_process = self.length
+            self.bytes_to_process = self.length_MSB * 256 + self.length_LSB
+            self.this_is_byte = 0
             self.csum(value)
-            return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'Length '+str(self.length)})
+            return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'Length ' + str(self.bytes_to_process)})
 
         # Process payload
         elif (self.ubx_state == self.processing_payload):
             if (self.bytes_to_process > 0):
                 self.csum(value)
+                result = self.analyze_UBX(frame, value)
+                self.this_is_byte += 1
                 self.bytes_to_process -= 1
-                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '.'})
+                return result
             else:
                 self.ubx_state = self.looking_for_checksum_A
 
         # Checksum A
-        elif (self.ubx_state == self.looking_for_checksum_A):
+        if (self.ubx_state == self.looking_for_checksum_A):
             if (value != self.sum1):
                 self.ubx_state = self.sync_lost
                 self.clear_stored_message(frame)
