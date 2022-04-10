@@ -7,7 +7,7 @@
 from saleae.analyzers import HighLevelAnalyzer, AnalyzerFrame, StringSetting, NumberSetting, ChoicesSetting
 from saleae.data import GraphTimeDelta
 
-I2C_ADDRESS_SETTING = 'I2C Address (usually 66 = 0x42)'
+I2C_ADDRESS_SETTING = 'I2C Address (usually 66 = 0x42)' # I2C_ADDRESS_SETTING is not used in v1.0.0. TODO: provide filtering on the selected address only
 
 class Hla(HighLevelAnalyzer):
 
@@ -305,36 +305,25 @@ class Hla(HighLevelAnalyzer):
         '''
         Analyze frame according to the UBX interface description
 
-        v0.0.1 : Analyze UBX-ACK-ACK, UBX-ACK-NACK and UBX-NAV-PVT
+        v1.0.0 : Analyze UBX-ACK-ACK, UBX-ACK-NACK and UBX-NAV-PVT
 
-        Note to self: If/when NAV2 is added, self.id_val_list.index("CLOCK") will find the index for NAV and NAV2.
-                      NAV2 will probably need to match id_position[1] ?
+        Note to self: If/when NAV2 is added, self.id_val_list.index("CLOCK") etc. will find the index for NAV, not NAV2.
         '''
 
         class_position = self.class_val_list.index("ACK")
         if (self.msg_class == self.class_key_list[class_position]): # if self.msg_class == ACK
 
-            id_position = self.id_val_list.index("ACK")
-            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == ACK
+            id_position_1 = self.id_val_list.index("ACK")
+            id_position_2 = self.id_val_list.index("NACK")
+            if ((self.msg_class,self.ID) == self.id_key_list[id_position_1]) or ((self.msg_class,self.ID) == self.id_key_list[id_position_2]): # if self.ID == ACK or NACK
 
                 if (self.this_is_byte == 0):
                     self.ack_class = value
-                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': self.UBX_CLASS[value]})
+                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': self.UBX_CLASS[value]})
                 elif (self.this_is_byte == 1):
-                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': self.UBX_ID[self.ack_class, value]})
+                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': self.UBX_ID[self.ack_class, value]})
                 else:
-                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': '?'})
-
-            id_position = self.id_val_list.index("NACK")
-            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == NACK
-
-                if (self.this_is_byte == 0):
-                    self.ack_class = value
-                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': self.UBX_CLASS[value]})
-                elif (self.this_is_byte == 1):
-                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': self.UBX_ID[self.ack_class, value]})
-                else:
-                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': '?'})
+                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '?'})
 
         class_position = self.class_val_list.index("NAV")
         if (self.msg_class == self.class_key_list[class_position]): # if self.msg_class == NAV
@@ -409,9 +398,11 @@ class Hla(HighLevelAnalyzer):
                 success, field = self.analyze_signed(value, frame, 90, 91, 'magAcc ')
                 if success: return field
 
+        return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '.'})                
+
     def decode(self, frame: AnalyzerFrame):
 
-        maximum_delay = GraphTimeDelta(0.1) # TODO: set maximum_delay according to baud rate / clock speed and message length
+        #maximum_delay = GraphTimeDelta(0.1) # TODO: set maximum_delay according to baud rate / clock speed and message length
 
         char = "unknown error."
 
@@ -419,11 +410,14 @@ class Hla(HighLevelAnalyzer):
         if self.temp_frame is None:
             self.clear_stored_message(frame)
 
+        value = None
+        char = None
+
         # handle serial data and I2C data
         if frame.type == "data" and "data" in frame.data.keys():
             value = frame.data["data"][0]
             char = chr(value)
-            #return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': char})
+            #return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': char}) # Useful for debugging
 
         # handle I2C address
         # if frame.type == "address":
@@ -465,6 +459,9 @@ class Hla(HighLevelAnalyzer):
         #         self.clear_stored_message(frame)
         #         return "TIMEOUT"
 
+        if value == None:
+            return None
+
         self.append_char(char)
         self.update_end_time(frame)
 
@@ -479,7 +476,7 @@ class Hla(HighLevelAnalyzer):
         # Checksum: two bytes
 
         # Check for sync char 1
-        if ((self.ubx_state == self.looking_for_sync_1) or (self.ubx_state == self.sync_lost)):
+        if (self.ubx_state == self.looking_for_sync_1) or (self.ubx_state == self.sync_lost):
             if (value == self.sync_char_1):
                 self.ubx_state = self.looking_for_sync_2
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': char})
