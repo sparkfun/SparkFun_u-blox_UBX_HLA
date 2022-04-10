@@ -3,9 +3,9 @@
   
 A Logic2 High Level Analyzer for the u-blox UBX protocol
 
-![Screen shot 1](.\Screenshot_1.png)
+![Screen shot 1](./Screenshot_1.png)
 
-![Screen shot 2](.\Screenshot_2.png)
+![Screen shot 2](./Screenshot_2.png)
 
 ## v0.0.1
 
