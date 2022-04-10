@@ -9,9 +9,9 @@ A Logic2 High Level Analyzer for the u-blox UBX protocol
 
 ![Screen shot 3](./Screenshot_3.png)
 
-Written for the [Saleae Logic Pro 8 USB Logic Analyzer](https://www.sparkfun.com/products/13196)
+Written for the [Saleae Logic Pro 8 USB Logic Analyzer](https://www.sparkfun.com/products/13196):
 
-![[Saleae Logic Pro 8 USB Logic Analyzer](https://www.sparkfun.com/products/13196)](https://cdn.sparkfun.com//assets/parts/1/0/3/3/0/13196-04.jpg)
+[![Saleae Logic Pro 8 USB Logic Analyzer](https://cdn.sparkfun.com//assets/parts/1/0/3/3/0/13196-04.jpg)](https://www.sparkfun.com/products/13196)
 
 ## v1.0.0
 
