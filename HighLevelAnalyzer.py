@@ -137,6 +137,52 @@ class Hla(HighLevelAnalyzer):
         self.sum1 = self.sum1 & 0xFF
         self.sum2 = self.sum2 & 0xFF
 
+    def analyze_unsigned(self, value, frame, start_byte, end_byte, name, format):
+        '''
+        Extract an unsigned 8, 16, 32 or 64 bit field
+        '''
+        if (self.this_is_byte >= start_byte) and (self.this_is_byte <= end_byte):
+            if self.this_is_byte == start_byte:
+                self.field = value
+                self.start_time = frame.start_time
+            else:
+                self.field += value << ((self.this_is_byte - start_byte) * 8)
+            if self.this_is_byte == end_byte:
+                if format == 'hex':
+                    field_str = hex(str(self.field))
+                else:
+                    field_str = str(self.field) # Default to 'dec' (decimal)
+                return True, AnalyzerFrame('message', self.start_time, frame.end_time, {'str': name + field_str})
+            else:
+                return True, None
+        else:
+            return False, None
+
+    def analyze_signed(self, value, frame, start_byte, end_byte, name):
+        '''
+        Extract a signed 8, 16, 32 or 64 bit field in decimal format
+        '''
+        if (self.this_is_byte >= start_byte) and (self.this_is_byte <= end_byte):
+            if self.this_is_byte == start_byte:
+                self.field = value
+                self.start_time = frame.start_time
+            else:
+                self.field += value << ((self.this_is_byte - start_byte) * 8)
+            if self.this_is_byte == end_byte:
+                twos_comp_neg = 0x80 << ((end_byte - start_byte) * 8)
+                twos_comp_pos = 0x7F
+                if end_byte > start_byte:
+                    for x in range(end_byte - start_byte):
+                        twos_comp_pos <<= 8
+                        twos_comp_pos |= 0xFF
+                self.field = -(self.field & twos_comp_neg) | (self.field & twos_comp_pos)
+                field_str = str(self.field)
+                return True, AnalyzerFrame('message', self.start_time, frame.end_time, {'str': name + field_str})
+            else:
+                return True, None
+        else:
+            return False, None
+
     def analyze_UBX(self, frame, value):
         '''
         Analyze frame according to the UBX interface description
@@ -156,27 +202,13 @@ class Hla(HighLevelAnalyzer):
             id_position = id_val_list.index("PVT")
             if ((self.msg_class,self.ID) == id_key_list[id_position]): # if self.ID == PVT
 
-                if (self.this_is_byte == 0):
-                    self.field = value
-                    self.start_time = frame.start_time
-                    return None
-                elif (self.this_is_byte == 1):
-                    self.field += value << 8
-                    return None
-                elif (self.this_is_byte == 2):
-                    self.field += value << 16
-                    return None
-                elif (self.this_is_byte == 3):
-                    self.field += value << 24
-                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'iTOW ' + str(self.field)})
-                elif (self.this_is_byte == 4):
-                    self.field = value
-                    self.start_time = frame.start_time
-                    return None
-                elif (self.this_is_byte == 5):
-                    self.field += value << 8
-                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'year ' + str(self.field)})
-                elif (self.this_is_byte == 6):
+                success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_unsigned(value, frame, 4, 5, 'year ', 'dec')
+                if success:
+                    return field
+                if (self.this_is_byte == 6):
                     return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'month ' + str(value)})
                 elif (self.this_is_byte == 7):
                     return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'day ' + str(value)})
@@ -188,33 +220,12 @@ class Hla(HighLevelAnalyzer):
                     return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'sec ' + str(value)})
                 elif (self.this_is_byte == 11):
                     return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'valid ' + hex(value)})
-                elif (self.this_is_byte == 12):
-                    self.field = value
-                    self.start_time = frame.start_time
-                    return None
-                elif (self.this_is_byte == 13):
-                    self.field += value << 8
-                    return None
-                elif (self.this_is_byte == 14):
-                    self.field += value << 16
-                    return None
-                elif (self.this_is_byte == 15):
-                    self.field += value << 24
-                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'tAcc ' + str(self.field)})
-                elif (self.this_is_byte == 16):
-                    self.field = value
-                    self.start_time = frame.start_time
-                    return None
-                elif (self.this_is_byte == 17):
-                    self.field += value << 8
-                    return None
-                elif (self.this_is_byte == 18):
-                    self.field += value << 16
-                    return None
-                elif (self.this_is_byte == 19):
-                    self.field += value << 24
-                    self.field = -(self.field & 0x80000000) | (self.field & 0x7FFFFFFF)
-                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'nano ' + str(self.field)})
+                success, field = self.analyze_unsigned(value, frame, 12, 15, 'tAcc ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_signed(value, frame, 16, 19, 'nano ')
+                if success:
+                    return field
 
     def decode(self, frame: AnalyzerFrame):
 
