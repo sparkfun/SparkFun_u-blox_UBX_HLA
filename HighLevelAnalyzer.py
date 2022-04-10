@@ -48,6 +48,74 @@ class Hla(HighLevelAnalyzer):
         # ACK
         (0x05, 0x01): "ACK",
         (0x05, 0x00): "NACK",
+        # CFG
+        (0x06, 0x13): "ANT",
+        (0x06, 0x09): "CFG",
+        (0x06, 0x06): "DAT",
+        (0x06, 0x70): "DGNSS",
+        (0x06, 0x69): "GEOFENCE",
+        (0x06, 0x3e): "GNSS",
+        (0x06, 0x02): "INF",
+        (0x06, 0x39): "ITFM",
+        (0x06, 0x47): "LOGFILTER",
+        (0x06, 0x01): "MSG",
+        (0x06, 0x24): "NAV5",
+        (0x06, 0x23): "NAVX5",
+        (0x06, 0x17): "NMEA",
+        (0x06, 0x1e): "ODO",
+        (0x06, 0x00): "PRT",
+        (0x06, 0x57): "PWR",
+        (0x06, 0x08): "RATE",
+        (0x06, 0x34): "RINV",
+        (0x06, 0x04): "RST",
+        (0x06, 0x16): "SBAS",
+        (0x06, 0x71): "TMODE3",
+        (0x06, 0x31): "TP5",
+        (0x06, 0x1b): "USB",
+        (0x06, 0x8c): "VALDEL",
+        (0x06, 0x8b): "VALGET",
+        (0x06, 0x8a): "VALSET",
+        # INF
+        (0x04, 0x04): "DEBUG",
+        (0x04, 0x00): "ERROR",
+        (0x04, 0x02): "NOTICE",
+        (0x04, 0x03): "TEST",
+        (0x04, 0x01): "WARNING",
+        # LOG
+        (0x21, 0x07): "CREATE",
+        (0x21, 0x03): "ERASE",
+        (0x21, 0x0e): "FINDTIME",
+        (0x21, 0x08): "INFO",
+        (0x21, 0x09): "RETRIEVE",
+        (0x21, 0x0b): "RETRIEVEPOS",
+        (0x21, 0x0f): "RETRIEVEPOSEXTRA",
+        (0x21, 0x0d): "RETRIEVESTRING",
+        (0x21, 0x04): "STRING",
+        # MGA
+        (0x13, 0x60): "ACK",
+        (0x13, 0x03): "BDS",
+        (0x13, 0x80): "DBD",
+        (0x13, 0x02): "GAL",
+        (0x13, 0x06): "GLO",
+        (0x13, 0x00): "GPS",
+        (0x13, 0x40): "INI",
+        (0x13, 0x05): "QZSS",
+        # MON
+        (0x0a, 0x36): "COMMS",
+        (0x0a, 0x28): "GNSS",
+        (0x0a, 0x09): "HW",
+        (0x0a, 0x0b): "HW2",
+        (0x0a, 0x37): "HW3",
+        (0x0a, 0x02): "IO",
+        (0x0a, 0x06): "MSGPP",
+        (0x0a, 0x27): "PATCH",
+        (0x0a, 0x38): "RF",
+        (0x0a, 0x07): "RXBUF",
+        (0x0a, 0x21): "RXR",
+        (0x0a, 0x31): "SPAN",
+        (0x0a, 0x39): "SYS",
+        (0x0a, 0x08): "TXBUF",
+        (0x0a, 0x04): "VER",
         # NAV
         (0x01, 0x22): "CLOCK",
         (0x01, 0x36): "COV",
@@ -78,8 +146,58 @@ class Hla(HighLevelAnalyzer):
         (0x01, 0x27): "TIMEQZSS",
         (0x01, 0x21): "TIMEUTC",
         (0x01, 0x11): "VELECEF",
-        (0x01, 0x12): "VELNED"
+        (0x01, 0x12): "VELNED",
+        # NAV2
+        (0x29, 0x22): "CLOCK",
+        (0x29, 0x36): "COV",
+        (0x29, 0x04): "DOP",
+        (0x29, 0x61): "EOE",
+        (0x29, 0x09): "ODO",
+        (0x29, 0x01): "POSECEF",
+        (0x29, 0x02): "POSLLH",
+        (0x29, 0x07): "PVT",
+        (0x29, 0x35): "SAT",
+        (0x29, 0x32): "SBAS",
+        (0x29, 0x43): "SIG",
+        (0x29, 0x42): "SLAS",
+        (0x29, 0x03): "STATUS",
+        (0x29, 0x3b): "SVIN",
+        (0x29, 0x24): "TIMEBDS",
+        (0x29, 0x25): "TIMEGAL",
+        (0x29, 0x23): "TIMEGLO",
+        (0x29, 0x20): "TIMEGPS",
+        (0x29, 0x26): "TIMELS",
+        (0x29, 0x27): "TIMEQZSS",
+        (0x29, 0x21): "TIMEUTC",
+        (0x29, 0x11): "VELECEF",
+        (0x29, 0x12): "VELNED",
+        # RXM
+        (0x02, 0x34): "COR",
+        (0x02, 0x14): "MEASX",
+        (0x02, 0x72): "PMP",
+        (0x02, 0x41): "PMREQ",
+        (0x02, 0x73): "QZSSL6",
+        (0x02, 0x15): "RAWX",
+        (0x02, 0x59): "RLM",
+        (0x02, 0x32): "RTCM",
+        (0x02, 0x13): "SFRBX",
+        (0x02, 0x33): "SPARTN",
+        (0x02, 0x36): "SPARTNKEY",
+        # SEC
+        (0x27, 0x03): "UNIQID",
+        # TIM
+        (0x0d, 0x03): "TM2",
+        (0x0d, 0x01): "TP",
+        (0x0d, 0x06): "VRFY",
+        # UPD
+        (0x09, 0x14): "SOS"
     }
+
+    class_key_list = list(UBX_CLASS.keys())
+    class_val_list = list(UBX_CLASS.values())
+
+    id_key_list = list(UBX_ID.keys())
+    id_val_list = list(UBX_ID.values())
 
     # Settings:
     i2c_address = NumberSetting(label=I2C_ADDRESS_SETTING, min_value=0, max_value=127)
@@ -149,7 +267,7 @@ class Hla(HighLevelAnalyzer):
                 self.field += value << ((self.this_is_byte - start_byte) * 8)
             if self.this_is_byte == end_byte:
                 if format == 'hex':
-                    field_str = hex(str(self.field))
+                    field_str = hex(self.field)
                 else:
                     field_str = str(self.field) # Default to 'dec' (decimal)
                 return True, AnalyzerFrame('message', self.start_time, frame.end_time, {'str': name + field_str})
@@ -187,45 +305,109 @@ class Hla(HighLevelAnalyzer):
         '''
         Analyze frame according to the UBX interface description
 
-        v0.0.1 : Support UBX-NAV-PVT
+        v0.0.1 : Analyze UBX-ACK-ACK, UBX-ACK-NACK and UBX-NAV-PVT
+
+        Note to self: If/when NAV2 is added, self.id_val_list.index("CLOCK") will find the index for NAV and NAV2.
+                      NAV2 will probably need to match id_position[1] ?
         '''
 
-        class_key_list = list(self.UBX_CLASS.keys())
-        class_val_list = list(self.UBX_CLASS.values())
+        class_position = self.class_val_list.index("ACK")
+        if (self.msg_class == self.class_key_list[class_position]): # if self.msg_class == ACK
 
-        id_key_list = list(self.UBX_ID.keys())
-        id_val_list = list(self.UBX_ID.values())
+            id_position = self.id_val_list.index("ACK")
+            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == ACK
 
-        class_position = class_val_list.index("NAV")
-        if (self.msg_class == class_key_list[class_position]): # if self.msg_class == NAV
+                if (self.this_is_byte == 0):
+                    self.ack_class = value
+                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': self.UBX_CLASS[value]})
+                elif (self.this_is_byte == 1):
+                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': self.UBX_ID[self.ack_class, value]})
+                else:
+                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': '?'})
 
-            id_position = id_val_list.index("PVT")
-            if ((self.msg_class,self.ID) == id_key_list[id_position]): # if self.ID == PVT
+            id_position = self.id_val_list.index("NACK")
+            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == NACK
+
+                if (self.this_is_byte == 0):
+                    self.ack_class = value
+                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': self.UBX_CLASS[value]})
+                elif (self.this_is_byte == 1):
+                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': self.UBX_ID[self.ack_class, value]})
+                else:
+                    return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': '?'})
+
+        class_position = self.class_val_list.index("NAV")
+        if (self.msg_class == self.class_key_list[class_position]): # if self.msg_class == NAV
+
+            id_position = self.id_val_list.index("PVT")
+            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == PVT
 
                 success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
-                if success:
-                    return field
+                if success: return field
                 success, field = self.analyze_unsigned(value, frame, 4, 5, 'year ', 'dec')
-                if success:
-                    return field
-                if (self.this_is_byte == 6):
-                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'month ' + str(value)})
-                elif (self.this_is_byte == 7):
-                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'day ' + str(value)})
-                elif (self.this_is_byte == 8):
-                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'hour ' + str(value)})
-                elif (self.this_is_byte == 9):
-                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'min ' + str(value)})
-                elif (self.this_is_byte == 10):
-                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'sec ' + str(value)})
-                elif (self.this_is_byte == 11):
-                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': 'valid ' + hex(value)})
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 6, 6, 'month ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 7, 7, 'day ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 8, 8, 'hour ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 9, 9, 'min ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 10, 10, 'sec ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 11, 11, 'valid ', 'hex')
+                if success: return field
                 success, field = self.analyze_unsigned(value, frame, 12, 15, 'tAcc ', 'dec')
-                if success:
-                    return field
+                if success: return field
                 success, field = self.analyze_signed(value, frame, 16, 19, 'nano ')
-                if success:
-                    return field
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 20, 20, 'fixType ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 21, 21, 'flags ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 22, 22, 'flags2 ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 23, 23, 'numSV ', 'dec')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 24, 27, 'lon ')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 28, 31, 'lat ')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 32, 35, 'height ')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 36, 39, 'hMSL ')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 40, 43, 'hAcc ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 44, 47, 'vAcc ', 'dec')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 48, 51, 'velN ')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 52, 55, 'velE ')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 56, 59, 'velD ')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 60, 63, 'gSpeed ')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 64, 67, 'headMot ')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 68, 71, 'sAcc ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 72, 75, 'headAcc ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 76, 77, 'pDOP ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 78, 79, 'flags3 ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 80, 83, 'reserved0 ', 'hex')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 84, 87, 'headVeh ')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 88, 89, 'magDec ')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 90, 91, 'magAcc ')
+                if success: return field
 
     def decode(self, frame: AnalyzerFrame):
 
