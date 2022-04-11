@@ -255,6 +255,24 @@ class Hla(HighLevelAnalyzer):
         self.sum1 = self.sum1 & 0xFF
         self.sum2 = self.sum2 & 0xFF
 
+    def analyze_string(self, value, frame, start_byte, end_byte):
+        '''
+        Extract a string
+        '''
+        if (self.this_is_byte >= start_byte) and (self.this_is_byte <= end_byte):
+            if self.this_is_byte == start_byte:
+                self.field_string = chr(value)
+                self.start_time = frame.start_time
+                return True, None
+            elif self.this_is_byte == end_byte:
+                self.field_string += chr(value)
+                return True, AnalyzerFrame('message', self.start_time, frame.end_time, {'str': self.field_string})
+            else:
+                self.field_string += chr(value)
+                return True, None
+        else:
+            return False, None
+
     def analyze_unsigned(self, value, frame, start_byte, end_byte, name, format):
         '''
         Extract an unsigned 8, 16, 32 or 64 bit field
@@ -306,6 +324,7 @@ class Hla(HighLevelAnalyzer):
         Analyze frame according to the UBX interface description
 
         v1.0.0 : Analyze UBX-ACK-ACK, UBX-ACK-NACK and UBX-NAV-PVT
+        v1.0.1 : Add UBX-RXM-PMP and UBX-INF-NOTICE, -ERROR and -WARNING
 
         Note to self: If/when NAV2 is added, self.id_val_list.index("CLOCK") etc. will find the index for NAV, not NAV2.
         '''
@@ -398,6 +417,88 @@ class Hla(HighLevelAnalyzer):
                 success, field = self.analyze_signed(value, frame, 90, 91, 'magAcc ')
                 if success: return field
 
+        class_position = self.class_val_list.index("RXM")
+        if (self.msg_class == self.class_key_list[class_position]): # if self.msg_class == RXM
+
+            id_position = self.id_val_list.index("PMP")
+            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == PMP
+
+                success, field = self.analyze_unsigned(value, frame, 0, 0, 'version ', 'dec')
+                if success:
+                    self.pmp_version = value
+                    return field
+                success, field = self.analyze_unsigned(value, frame, 4, 7, 'timeTag ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 8, 11, 'uniqueWord[0] ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 12, 15, 'uniqueWord[1] ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 16, 17, 'serviceIdentifier ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 18, 18, 'spare ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 19, 19, 'uniqueWordBitErrors ', 'dec')
+                if success: return field
+
+                if self.pmp_version == 0x01:
+                    success, field = self.analyze_unsigned(value, frame, 1, 1, 'reserved0 ', 'hex')
+                    if success: return field
+                    success, field = self.analyze_unsigned(value, frame, 2, 3, 'numBytesUserData ', 'dec')
+                    if success:
+                        if self.this_is_byte == 2:
+                            self.pmp_numBytesUserData = value
+                        else:
+                            self.pmp_numBytesUserData += value << 8
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, 20, 21, 'fecBits ', 'dec')
+                    if success: return field
+                    success, field = self.analyze_unsigned(value, frame, 22, 22, 'ebno ', 'dec')
+                    if success: return field
+                    success, field = self.analyze_unsigned(value, frame, 23, 23, 'reserved1 ', 'hex')
+                    if success: return field
+                    if self.this_is_byte == 24:
+                        self.start_time = frame.start_time
+                        return None
+                    if self.this_is_byte == 24 + self.pmp_numBytesUserData - 1:
+                        return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'userData'})
+                    return None
+                else: # PMP version == 0
+                    success, field = self.analyze_unsigned(value, frame, 1, 3, 'reserved0 ', 'hex')
+                    if success: return field
+                    success, field = self.analyze_unsigned(value, frame, 524, 525, 'fecBits ', 'dec')
+                    if success: return field
+                    success, field = self.analyze_unsigned(value, frame, 526, 526, 'ebno ', 'dec')
+                    if success: return field
+                    success, field = self.analyze_unsigned(value, frame, 527, 527, 'reserved1 ', 'hex')
+                    if success: return field
+                    if self.this_is_byte == 20:
+                        self.start_time = frame.start_time
+                        return None
+                    if self.this_is_byte == 523:
+                        return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'userData'})
+                    return None
+
+        class_position = self.class_val_list.index("INF")
+        if (self.msg_class == self.class_key_list[class_position]): # if self.msg_class == INF
+
+            id_position = self.id_val_list.index("NOTICE")
+            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == NOTICE
+
+                success, field = self.analyze_string(value, frame, 0, self.length_LSB + (self.length_MSB << 8) - 1)
+                if success: return field
+
+            id_position = self.id_val_list.index("ERROR")
+            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == ERROR
+
+                success, field = self.analyze_string(value, frame, 0, self.length_LSB + (self.length_MSB << 8) - 1)
+                if success: return field
+
+            id_position = self.id_val_list.index("WARNING")
+            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == WARNING
+
+                success, field = self.analyze_string(value, frame, 0, self.length_LSB + (self.length_MSB << 8) - 1)
+                if success: return field
+
         return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '.'})                
 
     def decode(self, frame: AnalyzerFrame):
@@ -479,6 +580,7 @@ class Hla(HighLevelAnalyzer):
         if (self.ubx_state == self.looking_for_sync_1) or (self.ubx_state == self.sync_lost):
             if (value == self.sync_char_1):
                 self.ubx_state = self.looking_for_sync_2
+                self.temp_frame.start_time = frame.start_time
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': char})
             else:
                 self.clear_stored_message(frame)
@@ -501,9 +603,10 @@ class Hla(HighLevelAnalyzer):
             self.sum2 = 0
             self.csum(value)
             if self.msg_class in self.UBX_CLASS:
-                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': self.UBX_CLASS[value]})
+                class_str = self.UBX_CLASS[value]
             else:
-                return None
+                class_str = 'Class'
+            return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': class_str})
 
         # Check for ID
         elif (self.ubx_state == self.looking_for_ID):
@@ -511,9 +614,10 @@ class Hla(HighLevelAnalyzer):
             self.ID = value
             self.csum(value)
             if (self.msg_class,self.ID) in self.UBX_ID:
-                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': self.UBX_ID[self.msg_class,self.ID]})
+                id_str = self.UBX_ID[self.msg_class,self.ID]
             else:
-                return None
+                id_str = 'ID'
+            return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': id_str})
 
         # Check for Length LSB
         elif (self.ubx_state == self.looking_for_length_LSB):
