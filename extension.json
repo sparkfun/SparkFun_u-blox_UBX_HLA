@@ -1,8 +1,8 @@
 {
   "name": "u-blox UBX",
   "apiVersion": "1.0.0",
-  "author": "Paul Clark, SparkFun",
-  "version": "1.0.1",
+  "author": "Paul Clark, SparkFun, maehw",
+  "version": "1.0.2",
   "description": "A Logic2 High Level Analyzer for the u-blox UBX protocol",
   "extensions": {
     "SparkFun_u-blox_UBX_HLA": {

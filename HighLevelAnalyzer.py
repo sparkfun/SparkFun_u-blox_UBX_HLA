@@ -344,6 +344,48 @@ class Hla(HighLevelAnalyzer):
                 else:
                     return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '?'})
 
+        class_position = self.class_val_list.index("MON")
+        if (self.msg_class == self.class_key_list[class_position]): # if self.msg_class == MON
+
+            id_position = self.id_val_list.index("HW")
+            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == HW
+
+                success, field = self.analyze_unsigned(value, frame, 0, 3, 'pinSel ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 4, 7, 'pinBank ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 8, 11, 'pinDir ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 12, 15, 'pinVal ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 16, 17, 'noisePerMS ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 18, 19, 'agcCnt ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 20, 20, 'aStatus ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 21, 21, 'aPower ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 22, 22, 'flags ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 23, 23, 'reserved1 ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 24, 27, 'usedMask ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 28, 52, 'VP ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 53, 53, 'jamInd ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 54, 55, 'reserved2 ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 56, 59, 'pinIrq ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 60, 63, 'pullH ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 64, 67, 'pullL ', 'hex')
+                if success: return field
+
+
         class_position = self.class_val_list.index("NAV")
         if (self.msg_class == self.class_key_list[class_position]): # if self.msg_class == NAV
 
@@ -415,6 +457,40 @@ class Hla(HighLevelAnalyzer):
                 success, field = self.analyze_signed(value, frame, 88, 89, 'magDec ')
                 if success: return field
                 success, field = self.analyze_signed(value, frame, 90, 91, 'magAcc ')
+                if success: return field
+
+            id_position = self.id_val_list.index("STATUS")
+            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == STATUS
+
+                success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 4, 4, 'gpsFix ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 5, 5, 'flags ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 6, 6, 'fixStat ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 7, 7, 'flags2 ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 8, 11, 'ttff ', 'dec')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 12, 15, 'msss ', 'dec')
+                if success: return field
+
+            id_position = self.id_val_list.index("TIMEGPS")
+            if ((self.msg_class,self.ID) == self.id_key_list[id_position]): # if self.ID == TIMEGPS
+
+                success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 4, 7, 'fTOW ')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 8, 9, 'week ')
+                if success: return field
+                success, field = self.analyze_signed(value, frame, 10, 10, 'leapS ')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 11, 11, 'valid ', 'hex')
+                if success: return field
+                success, field = self.analyze_unsigned(value, frame, 12, 15, 'tAcc ', 'hex')
                 if success: return field
 
         class_position = self.class_val_list.index("RXM")

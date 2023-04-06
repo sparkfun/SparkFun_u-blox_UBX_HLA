@@ -13,6 +13,10 @@ Written for the [Saleae Logic Pro 8 USB Logic Analyzer](https://www.sparkfun.com
 
 [![Saleae Logic Pro 8 USB Logic Analyzer](https://cdn.sparkfun.com//assets/parts/1/0/3/3/0/13196-04.jpg)](https://www.sparkfun.com/products/13196)
 
+## v1.0.2
+
+Add support for decoding MON-HW, NAV-STATUS and NAV-TIMEGPS messages (according to u-blox 6 Protocol Specification).
+
 ## v1.0.1
 
 Add support for NEO-D9S: decode UBX-RXM-PMP (Versions 0 and 1); UBX-INF-NOTICE, -ERROR and -WARNING.
