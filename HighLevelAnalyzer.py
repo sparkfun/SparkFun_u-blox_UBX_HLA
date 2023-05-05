@@ -274,7 +274,7 @@ class Hla(HighLevelAnalyzer):
         self.sum1 = self.sum1 & 0xFF
         self.sum2 = self.sum2 & 0xFF
 
-    def analyze_string(self, value, frame, start_byte, end_byte):
+    def analyze_string(self, value, frame, start_byte, end_byte, prefix=None):
         """
         Extract a string
         """
@@ -285,6 +285,8 @@ class Hla(HighLevelAnalyzer):
                 return True, None
             elif self.this_is_byte == end_byte:
                 self.field_string += chr(value)
+                if prefix is not None:
+                    self.field_string = prefix + self.field_string
                 return True, AnalyzerFrame('message', self.start_time, frame.end_time, {'str': self.field_string})
             else:
                 self.field_string += chr(value)
@@ -655,6 +657,16 @@ class Hla(HighLevelAnalyzer):
                 success, field = self.analyze_unsigned(value, frame, 12, 15, 'tAcc ', 'hex')
                 if success:
                     return field
+
+        id_position = self.id_val_list.index("VER")
+        if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == VER
+            # read the whole version information as one blob; should be NULL-terminated C string, but not seen as such
+            assert(self.length_MSB == 0)
+            versionLength = self.length_LSB
+
+            success, field = self.analyze_string(value, frame, 0, versionLength-1, f'version info (len={versionLength}): ')
+            if success:
+                return field
 
         class_position = self.class_val_list.index("RXM")
         if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == RXM

@@ -15,7 +15,7 @@ Written for the [Saleae Logic Pro 8 USB Logic Analyzer](https://www.sparkfun.com
 
 ## v1.0.2
 
-Add support for decoding CFG-PRT, CFG-RST, CFG-MSG, MON-HW, NAV-STATUS and NAV-TIMEGPS messages. Support for u-blox 6 and u-blox 8 Protocol Specifications.
+Add support for decoding CFG-PRT, CFG-RST, CFG-MSG, MON-VER, MON-HW, NAV-STATUS and NAV-TIMEGPS messages. Support for u-blox 6 and u-blox 8 Protocol Specifications.
 
 ## v1.0.1
 
