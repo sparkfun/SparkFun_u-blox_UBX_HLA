@@ -68,7 +68,7 @@ class Hla(HighLevelAnalyzer):
         (0x06, 0x00): "PRT",
         (0x06, 0x57): "PWR",
         (0x06, 0x08): "RATE",
-        (0x06, 0x34): "RINV",
+        (0x06, 0x34): "RINV",  # poll contents of remote inventory
         (0x06, 0x04): "RST",
         (0x06, 0x16): "SBAS",
         (0x06, 0x71): "TMODE3",
@@ -364,6 +364,46 @@ class Hla(HighLevelAnalyzer):
                                          {'str': self.UBX_ID[self.ack_class, value]})
                 else:
                     return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '?'})
+
+        class_position = self.class_val_list.index("CFG")
+        if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == CFG
+
+            id_position = self.id_val_list.index("PRT")
+            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == PRT
+
+                # there are both messages with lengths 1 and 20 on M6 _and_ M8, they almost completely match
+                if self.length_MSB == 0 and (self.length_LSB == 20 or self.length_LSB == 1):
+                    success, field = self.analyze_unsigned(value, frame, 0, 0, 'portID ', 'hex')
+                    if success:
+                        return field
+                if self.length_MSB == 0 and self.length_LSB == 20:
+                    # called 'reserved0' on M6 and 'reserved1' on M8
+                    success, field = self.analyze_unsigned(value, frame, 1, 1, 'res0M6_res1M8 ', 'hex')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, 2, 3, 'txReady ', 'hex')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, 4, 7, 'mode ', 'hex')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, 8, 11, 'baudrate ', 'dec')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, 12, 13, 'inProtoMask ', 'hex')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, 14, 15, 'outProtoMask ', 'hex')
+                    if success:
+                        return field
+                    # called 'reserved4' on M6 and 'flags' on M8
+                    success, field = self.analyze_unsigned(value, frame, 16, 17, 'res4M6_flagsM8 ', 'hex')
+                    if success:
+                        return field
+                    # called 'reserved5' on M6 and 'reserved2' on M8
+                    success, field = self.analyze_unsigned(value, frame, 18, 19, 'res5M6_res2M8 ', 'hex')
+                    if success:
+                        return field
 
         class_position = self.class_val_list.index("MON")
         if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == MON
