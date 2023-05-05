@@ -405,6 +405,46 @@ class Hla(HighLevelAnalyzer):
                     if success:
                         return field
 
+
+            id_position = self.id_val_list.index("MSG")
+            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == MSG
+
+                # there are messages with lengths 2, 3 and 8 on M6 _and_ M8, the field sizes and names completely match
+                if self.length_MSB == 0 and self.length_LSB in [2, 3, 8]:
+                    # datasheet states U1, but hex makes more sense to interpret
+                    success, field = self.analyze_unsigned(value, frame, 0, 0, 'msgClass ', 'hex')
+                    if success:
+                        return field
+                    # datasheet states U1, but hex makes more sense to interpret
+                    success, field = self.analyze_unsigned(value, frame, 1, 1, 'msgId ', 'hex')
+                    if success:
+                        return field
+                if self.length_MSB == 0 and self.length_LSB in [3, 8]:
+                    success, field = self.analyze_unsigned(value, frame, 2, 2, 'rate ', 'dec')
+                    if success:
+                        return field
+                if self.length_MSB == 0 and self.length_LSB == 8:
+                    for p in range(3, 7+1):
+                        success, field = self.analyze_unsigned(value, frame, p, p, 'rate ', 'dec')
+                        if success:
+                            return field
+
+            id_position = self.id_val_list.index("RST")
+            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == RST
+
+                # there are messages with length 4 on M6 _and_ M8, the field sizes and names completely match
+                if self.length_MSB == 0 and self.length_LSB == 4:
+                    success, field = self.analyze_unsigned(value, frame, 0, 1, 'navBbrMask ', 'hex')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, 2, 2, 'resetMode ', 'dec')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, 3, 3, 'reserved1 ', 'dec')
+                    if success:
+                        return field
+
+
         class_position = self.class_val_list.index("MON")
         if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == MON
 
