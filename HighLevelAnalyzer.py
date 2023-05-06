@@ -388,6 +388,19 @@ class Hla(HighLevelAnalyzer):
         else:
             return False, None
 
+    def analyze_array(self, value, frame, start_byte, end_byte, name, fmt):
+        """
+        Extract an array of hex or decimal values
+        """
+        if (self.this_is_byte >= start_byte) and (self.this_is_byte <= end_byte):
+            if fmt == 'hex':
+                field_str = "0x{:02X}".format(value)
+            else:
+                field_str = str(value)  # Default to 'dec' (decimal)
+            return True, AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': name + field_str})
+        else:
+            return False, None
+
     def analyze_ubx(self, frame, value):
         """
         Analyze frame according to the UBX interface description
@@ -535,7 +548,7 @@ class Hla(HighLevelAnalyzer):
                 success, field = self.analyze_unsigned(value, frame, 24, 27, 'usedMask ', 'hex')
                 if success:
                     return field
-                success, field = self.analyze_unsigned(value, frame, 28, 52, 'VP ', 'hex')
+                success, field = self.analyze_array(value, frame, 28, 52, 'VP ', 'hex')
                 if success:
                     return field
                 success, field = self.analyze_unsigned(value, frame, 53, 53, 'jamInd ', 'dec')
@@ -915,7 +928,7 @@ class Hla(HighLevelAnalyzer):
             if value == self.sync_char_1:
                 self.decode_state = self.looking_for_sync_2
                 self.temp_frame.start_time = frame.start_time
-                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "UBX"})
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "UBX μ"})
             elif value == self.dollar:
                 self.decode_state = self.looking_for_asterix
                 self.nmea_sum = 0 # Clear the checksum
@@ -1109,7 +1122,7 @@ class Hla(HighLevelAnalyzer):
             self.csum_rtcm(value)
             if self.this_is_byte == self.bytes_to_process:
                 self.decode_state = self.looking_for_RTCM_csum1
-            return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "0x{:02x}".format(value)})
+            return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "0x{:02X}".format(value)})
 
         # RTCM Checksum 1
         if self.decode_state == self.looking_for_RTCM_csum1:
