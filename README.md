@@ -15,7 +15,7 @@ Written for the [Saleae Logic Pro 8 USB Logic Analyzer](https://www.sparkfun.com
 
 ## v1.0.2
 
-* NMEA decoding (length and checksum only).
+* NMEA decoding (format and checksum only).
 * RTCM decoding (length, type and checksum only).
 
 Contributed by [@maehw](https://github.com/maehw) :
