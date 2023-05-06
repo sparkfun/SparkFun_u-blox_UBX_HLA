@@ -1,9 +1,9 @@
 {
   "name": "u-blox UBX",
   "apiVersion": "1.0.0",
-  "author": "Paul Clark, SparkFun, maehw",
+  "author": "SparkFun & Contributors",
   "version": "1.0.2",
-  "description": "A Logic2 High Level Analyzer for the u-blox UBX protocol",
+  "description": "A Logic2 High Level Analyzer for the u-blox UBX protocol. Also supports NMEA and RTCM.",
   "extensions": {
     "SparkFun_u-blox_UBX_HLA": {
       "type": "HighLevelAnalyzer",

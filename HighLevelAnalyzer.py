@@ -14,20 +14,37 @@ I2C_ADDRESS_SETTING = 'I2C Address (usually 66 = 0x42)'
 
 class Hla(HighLevelAnalyzer):
     temp_frame = None
-    sync_char_1 = 0xB5
-    sync_char_2 = 0x62
+
+    sync_char_1 = 0xB5 # UBX preamble sync 1
+    sync_char_2 = 0x62 # UBX preamble sync 2
+    dollar = 0x24 # NMEA start delimiter
+    asterix = 0x2A # NMEA checksum delimiter
+    rtcm_preamble = 0xD3 # RTCM preamble
 
     # Sync 'state machine'
-    looking_for_sync_1 = 0  # Looking for UBX sync char 1 0xB5
-    looking_for_sync_2 = 1  # Looking for UBX sync char 2 0x62
-    looking_for_class = 2  # Looking for UBX class byte
-    looking_for_ID = 3  # Looking for UBX ID byte
-    looking_for_length_LSB = 4  # Looking for UBX length bytes
-    looking_for_length_MSB = 5
-    processing_payload = 6  # Processing the payload. Keep going until length bytes have been processed
-    looking_for_checksum_A = 7  # Looking for UBX checksum bytes
-    looking_for_checksum_B = 8
-    sync_lost = 9  # Go into this state if sync is lost (bad checksum etc.)
+    looking_for_B5_dollar_D3    = 0 # Looking for UBX 0xB5, NMEA '$' or RTCM 0xD3
+    looking_for_sync_2          = 1 # Looking for UBX sync char 2 0x62
+    looking_for_class           = 2 # Looking for UBX class byte
+    looking_for_ID              = 3 # Looking for UBX ID byte
+    looking_for_length_LSB      = 4 # Looking for UBX length bytes
+    looking_for_length_MSB      = 5
+    processing_UBX_payload      = 6 # Processing the UBX payload. Keep going until length bytes have been processed
+    looking_for_checksum_A      = 7 # Looking for UBX checksum bytes
+    looking_for_checksum_B      = 8
+    sync_lost                   = 9 # Go into this state if sync is lost (bad checksum etc.)
+    looking_for_asterix         = 10 # Looking for NMEA '*'
+    looking_for_csum1           = 11 # Looking for NMEA checksum bytes
+    looking_for_csum2           = 12
+    looking_for_term1           = 13 # Looking for NMEA terminating bytes (CR and LF)
+    looking_for_term2           = 14
+    looking_for_RTCM_len1       = 15 # Looking for RTCM length byte (2 MS bits)
+    looking_for_RTCM_len2       = 16 # Looking for RTCM length byte (8 LS bits)
+    looking_for_RTCM_type1      = 17 # Looking for RTCM Type byte (8 MS bits, first byte of the payload)
+    looking_for_RTCM_type2      = 18 # Looking for RTCM Type byte (4 LS bits, second byte of the payload)
+    processing_RTCM_payload     = 19 # Processing RTCM payload bytes
+    looking_for_RTCM_csum1      = 20 # Looking for the first 8 bits of the CRC-24Q checksum
+    looking_for_RTCM_csum2      = 21 # Looking for the second 8 bits of the CRC-24Q checksum
+    looking_for_RTCM_csum3      = 22 # Looking for the third 8 bits of the CRC-24Q checksum
 
     # UBX Class
     UBX_CLASS = {
@@ -217,6 +234,9 @@ class Hla(HighLevelAnalyzer):
         """
 
         self.ID = None
+
+        self.decode_state = None
+
         self.this_is_byte = None
         self.bytes_to_process = None
         self.length_MSB = None
@@ -228,9 +248,13 @@ class Hla(HighLevelAnalyzer):
         self.field = None
         self.start_time = None
         self.field_string = None
-        self.ubx_state = None
         self.sum1 = 0  # Clear the checksum
         self.sum2 = 0
+
+        self.nmea_sum = 0
+
+        self.rtcm_type = 0
+        self.rtcm_sum = 0
 
         self.result_types["message"] = {
             'format': '{{{data.str}}}'
@@ -250,7 +274,7 @@ class Hla(HighLevelAnalyzer):
         self.temp_frame = AnalyzerFrame('message', frame.start_time, frame.end_time, {
             'str': ''
         })
-        self.ubx_state = self.sync_lost  # Initialize the state machine
+        self.decode_state = self.sync_lost  # Initialize the state machine
 
     def append_char(self, char):
         self.temp_frame.data["str"] += char
@@ -265,7 +289,7 @@ class Hla(HighLevelAnalyzer):
     def update_end_time(self, frame):
         self.temp_frame.end_time = frame.end_time
 
-    def csum(self, value):
+    def csum_ubx(self, value):
         """
         Add value to checksums sum1 and sum2
         """
@@ -273,6 +297,30 @@ class Hla(HighLevelAnalyzer):
         self.sum2 = self.sum2 + self.sum1
         self.sum1 = self.sum1 & 0xFF
         self.sum2 = self.sum2 & 0xFF
+
+    def csum_nmea(self, value):
+        """
+        Ex-Or value into checksum
+        """
+        self.nmea_sum = self.nmea_sum ^ value
+
+    def csum_rtcm(self, value):
+        """
+        Add value to RTCM checksum using CRC-24Q
+        """
+        crc = self.rtcm_sum # Seed is 0
+
+        crc ^= value << 16 # XOR-in incoming
+
+        for i in range(8):
+            crc <<= 1
+            if (crc & 0x1000000):
+                # CRC-24Q Polynomial:
+                # gi = 1 for i = 0, 1, 3, 4, 5, 6, 7, 10, 11, 14, 17, 18, 23, 24
+                # 0b 1 1000 0110 0100 1100 1111 1011
+                crc ^= 0x1864CFB # CRC-24Q
+
+        self.rtcm_sum = crc & 0xFFFFFF
 
     def analyze_string(self, value, frame, start_byte, end_byte, prefix=None):
         """
@@ -346,6 +394,7 @@ class Hla(HighLevelAnalyzer):
 
         v1.0.0 : Analyze UBX-ACK-ACK, UBX-ACK-NACK and UBX-NAV-PVT
         v1.0.1 : Add UBX-RXM-PMP and UBX-INF-NOTICE, -ERROR and -WARNING
+        v1.0.2 : @maehw Add UBX-CFG-PRT, UBX-CFG-MSG, UBX-CFG-RST, UBX-MON-HW, UBX-MON-VER, UBX-NAV-STATUS, UBX-NAV-TIMEGPS
 
         Note to self: If/when NAV2 is added, self.id_val_list.index("CLOCK") etc. will find the index for NAV, not NAV2.
         """
@@ -505,6 +554,16 @@ class Hla(HighLevelAnalyzer):
                 if success:
                     return field
 
+            id_position = self.id_val_list.index("VER")
+            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == VER
+                # read the whole version information as one blob; should be NULL-terminated C string, but not seen as such
+                assert(self.length_MSB == 0)
+                versionLength = self.length_LSB
+
+                success, field = self.analyze_string(value, frame, 0, versionLength-1, f'version info (len={versionLength}): ')
+                if success:
+                    return field
+
         class_position = self.class_val_list.index("NAV")
         if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == NAV
 
@@ -657,16 +716,6 @@ class Hla(HighLevelAnalyzer):
                 success, field = self.analyze_unsigned(value, frame, 12, 15, 'tAcc ', 'hex')
                 if success:
                     return field
-
-        id_position = self.id_val_list.index("VER")
-        if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == VER
-            # read the whole version information as one blob; should be NULL-terminated C string, but not seen as such
-            assert(self.length_MSB == 0)
-            versionLength = self.length_LSB
-
-            success, field = self.analyze_string(value, frame, 0, versionLength-1, f'version info (len={versionLength}): ')
-            if success:
-                return field
 
         class_position = self.class_val_list.index("RXM")
         if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == RXM
@@ -833,7 +882,7 @@ class Hla(HighLevelAnalyzer):
         self.append_char(char)
         self.update_end_time(frame)
 
-        # Process data bytes according to ubx_nmea_state
+        # Process data bytes according to decode_state
         # For UBX messages:
         # Sync Char 1: 0xB5
         # Sync Char 2: 0x62
@@ -843,32 +892,59 @@ class Hla(HighLevelAnalyzer):
         # Payload: length bytes
         # Checksum: two bytes
 
-        # Check for sync char 1
-        if (self.ubx_state == self.looking_for_sync_1) or (self.ubx_state == self.sync_lost):
+        # For NMEA messages:
+        # Starts with a '$'
+        # The next five characters indicate the message type (stored in nmea_char_1 to nmea_char_5)
+        # Message fields are comma-separated
+        # Followed by an '*'
+        # Then a two character checksum (the logical exclusive-OR of all characters between the $ and the * as ASCII hex)
+        # Ends with CR LF
+
+        # For RTCM messages:
+        # Byte0 is 0xD3
+        # Byte1 contains 6 unused bits plus the 2 MS bits of the message length
+        # Byte2 contains the remainder of the message length
+        # Byte3 contains the first 8 bits of the message type
+        # Byte4 contains the last 4 bits of the message type and (optionally) the first 4 bits of the sub type
+        # Byte5 contains (optionally) the last 8 bits of the sub type
+        # Payload
+        # Checksum: three bytes CRC-24Q (calculated from Byte0 to the end of the payload, with seed 0)
+
+        # Check for UBX 0xB5, NMEA $ or RTCM 0xD3
+        if (self.decode_state == self.looking_for_B5_dollar_D3) or (self.decode_state == self.sync_lost):
             if value == self.sync_char_1:
-                self.ubx_state = self.looking_for_sync_2
+                self.decode_state = self.looking_for_sync_2
                 self.temp_frame.start_time = frame.start_time
-                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': char})
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "UBX"})
+            elif value == self.dollar:
+                self.decode_state = self.looking_for_asterix
+                self.nmea_sum = 0 # Clear the checksum
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "NMEA"})
+            elif value == self.rtcm_preamble:
+                self.decode_state = self.looking_for_RTCM_len1
+                self.rtcm_sum = 0 # CRC seed is 0
+                self.csum_rtcm(value) # Add preamble to rtcm_sum
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "RTCM"})
             else:
                 self.clear_stored_message(frame)
                 return None
 
         # Check for sync char 2
-        elif self.ubx_state == self.looking_for_sync_2:
+        elif self.decode_state == self.looking_for_sync_2:
             if value == self.sync_char_2:
-                self.ubx_state = self.looking_for_class
+                self.decode_state = self.looking_for_class
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': char})
             else:
                 self.clear_stored_message(frame)
                 return None
 
         # Check for Class
-        elif self.ubx_state == self.looking_for_class:
-            self.ubx_state = self.looking_for_ID
+        elif self.decode_state == self.looking_for_class:
+            self.decode_state = self.looking_for_ID
             self.msg_class = value
             self.sum1 = 0  # Clear the checksum
             self.sum2 = 0
-            self.csum(value)
+            self.csum_ubx(value)
             if self.msg_class in self.UBX_CLASS:
                 class_str = self.UBX_CLASS[value]
             else:
@@ -876,10 +952,10 @@ class Hla(HighLevelAnalyzer):
             return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': class_str})
 
         # Check for ID
-        elif self.ubx_state == self.looking_for_ID:
-            self.ubx_state = self.looking_for_length_LSB
+        elif self.decode_state == self.looking_for_ID:
+            self.decode_state = self.looking_for_length_LSB
             self.ID = value
-            self.csum(value)
+            self.csum_ubx(value)
             if (self.msg_class, self.ID) in self.UBX_ID:
                 id_str = self.UBX_ID[self.msg_class, self.ID]
             else:
@@ -887,54 +963,183 @@ class Hla(HighLevelAnalyzer):
             return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': id_str})
 
         # Check for Length LSB
-        elif self.ubx_state == self.looking_for_length_LSB:
-            self.ubx_state = self.looking_for_length_MSB
+        elif self.decode_state == self.looking_for_length_LSB:
+            self.decode_state = self.looking_for_length_MSB
             self.length_LSB = value
-            self.csum(value)
+            self.csum_ubx(value)
             self.start_time = frame.start_time
             return None
 
         # Check for Length MSB
-        elif self.ubx_state == self.looking_for_length_MSB:
-            self.ubx_state = self.processing_payload
+        elif self.decode_state == self.looking_for_length_MSB:
+            self.decode_state = self.processing_UBX_payload
             self.length_MSB = value
             self.bytes_to_process = self.length_MSB * 256 + self.length_LSB
             self.this_is_byte = 0
-            self.csum(value)
+            self.csum_ubx(value)
             return AnalyzerFrame('message', self.start_time, frame.end_time,
                                  {'str': 'Length ' + str(self.bytes_to_process)})
 
         # Process payload
-        elif self.ubx_state == self.processing_payload:
+        elif self.decode_state == self.processing_UBX_payload:
             if self.bytes_to_process > 0:
-                self.csum(value)
+                self.csum_ubx(value)
                 result = self.analyze_ubx(frame, value)
                 self.this_is_byte += 1
                 self.bytes_to_process -= 1
                 return result
             else:
-                self.ubx_state = self.looking_for_checksum_A
+                self.decode_state = self.looking_for_checksum_A
 
         # Checksum A
-        if self.ubx_state == self.looking_for_checksum_A:
+        if self.decode_state == self.looking_for_checksum_A:
             if value != self.sum1:
-                self.ubx_state = self.sync_lost
+                self.decode_state = self.sync_lost
                 self.clear_stored_message(frame)
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "INVALID CK_A"})
             else:
-                self.ubx_state = self.looking_for_checksum_B
+                self.decode_state = self.looking_for_checksum_B
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CK_A"})
 
         # Checksum B
-        elif self.ubx_state == self.looking_for_checksum_B:
+        elif self.decode_state == self.looking_for_checksum_B:
             if value != self.sum2:
-                self.ubx_state = self.sync_lost
+                self.decode_state = self.sync_lost
                 self.clear_stored_message(frame)
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "INVALID CK_B"})
             else:
-                self.ubx_state = self.looking_for_sync_1
+                self.decode_state = self.looking_for_B5_dollar_D3
                 self.clear_stored_message(frame)
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CK_B"})
+
+        # Process NMEA payload
+        elif self.decode_state == self.looking_for_asterix:
+            if value != self.asterix: # Add value to checksum
+                self.csum_nmea(value)
+            else: 
+                self.nmea_expected_csum1 = ((self.nmea_sum & 0xf0) >> 4) + 0x30 # Convert MS nibble to ASCII hex
+                if (self.nmea_expected_csum1 >= 0x3A): # : follows 9 so add 7 to convert to A-F
+                    self.nmea_expected_csum1 += 7
+                self.nmea_expected_csum2 = (self.nmea_sum & 0x0f) + 0x30 # Convert LS nibble to ASCII hex
+                if (self.nmea_expected_csum2 >= 0x3A): # : follows 9 so add 7 to convert to A-F
+                    self.nmea_expected_csum2 += 7
+                self.decode_state = self.looking_for_csum1
+            return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': char})
+
+        # NMEA Checksum 1
+        if self.decode_state == self.looking_for_csum1:
+            if value != self.nmea_expected_csum1:
+                self.decode_state = self.sync_lost
+                self.clear_stored_message(frame)
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "INVALID CSUM1"})
+            else:
+                self.decode_state = self.looking_for_csum2
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CSUM1"})
+
+        # NMEA Checksum 2
+        if self.decode_state == self.looking_for_csum2:
+            if value != self.nmea_expected_csum2:
+                self.decode_state = self.sync_lost
+                self.clear_stored_message(frame)
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "INVALID CSUM2"})
+            else:
+                self.decode_state = self.looking_for_term1
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CSUM2"})
+
+        # NMEA Terminator 1 (CR)
+        if self.decode_state == self.looking_for_term1:
+            if value != 0x0D:
+                self.decode_state = self.sync_lost
+                self.clear_stored_message(frame)
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "INVALID CR"})
+            else:
+                self.decode_state = self.looking_for_term2
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "CR"})
+
+        # NMEA Terminator 2 (LF)
+        if self.decode_state == self.looking_for_term2:
+            if value != 0x0A:
+                self.decode_state = self.sync_lost
+                self.clear_stored_message(frame)
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "INVALID LF"})
+            else:
+                self.decode_state = self.looking_for_B5_dollar_D3
+                self.clear_stored_message(frame)
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "LF"})
+
+        # Check for RTCM Length MSB
+        elif self.decode_state == self.looking_for_RTCM_len1:
+            self.decode_state = self.looking_for_RTCM_len2
+            self.length_MSB = value
+            self.csum_rtcm(value)
+            self.start_time = frame.start_time
+            return None
+
+        # Check for RTCM Length LSB
+        elif self.decode_state == self.looking_for_RTCM_len2:
+            self.decode_state = self.looking_for_RTCM_type1
+            self.length_LSB = value
+            self.bytes_to_process = self.length_MSB * 256 + self.length_LSB
+            self.this_is_byte = 0
+            self.csum_rtcm(value)
+            return AnalyzerFrame('message', self.start_time, frame.end_time,
+                                 {'str': 'Length ' + str(self.bytes_to_process)})
+
+        # Check for RTCM Type MSB
+        elif self.decode_state == self.looking_for_RTCM_type1:
+            self.decode_state = self.looking_for_RTCM_type2
+            self.rtcm_type = value
+            self.this_is_byte = self.this_is_byte + 1
+            self.csum_rtcm(value)
+            self.start_time = frame.start_time
+            return None
+
+        # Check for RTCM Type MSB
+        elif self.decode_state == self.looking_for_RTCM_type2:
+            self.decode_state = self.processing_RTCM_payload
+            self.rtcm_type = (self.rtcm_type << 4) | (value >> 4)
+            self.this_is_byte = self.this_is_byte + 1
+            self.csum_rtcm(value)
+            return AnalyzerFrame('message', self.start_time, frame.end_time,
+                                 {'str': 'Type ' + str(self.rtcm_type)})
+
+        # Process RTCM payload
+        elif self.decode_state == self.processing_RTCM_payload:
+            self.this_is_byte = self.this_is_byte + 1
+            self.csum_rtcm(value)
+            if self.this_is_byte == self.bytes_to_process:
+                self.decode_state = self.looking_for_RTCM_csum1
+            return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "0x{:02x}".format(value)})
+
+        # RTCM Checksum 1
+        if self.decode_state == self.looking_for_RTCM_csum1:
+            if value != ((self.rtcm_sum >> 16) & 0xFF):
+                self.decode_state = self.sync_lost
+                self.clear_stored_message(frame)
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "INVALID CSUM1"})
+            else:
+                self.decode_state = self.looking_for_RTCM_csum2
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CSUM1"})
+
+        # RTCM Checksum 2
+        if self.decode_state == self.looking_for_RTCM_csum2:
+            if value != ((self.rtcm_sum >> 8) & 0xFF):
+                self.decode_state = self.sync_lost
+                self.clear_stored_message(frame)
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "INVALID CSUM2"})
+            else:
+                self.decode_state = self.looking_for_RTCM_csum3
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CSUM2"})
+
+        # RTCM Checksum 3
+        if self.decode_state == self.looking_for_RTCM_csum3:
+            if value != (self.rtcm_sum & 0xFF):
+                self.decode_state = self.sync_lost
+                self.clear_stored_message(frame)
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "INVALID CSUM3"})
+            else:
+                self.decode_state = self.looking_for_B5_dollar_D3
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CSUM3"})
 
         # This should never happen...
         else:
