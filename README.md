@@ -3,11 +3,13 @@
   
 A Logic2 High Level Analyzer for the u-blox UBX protocol. Also supports NMEA and RTCM.
 
-![Screen shot 1](./Screenshot_1.png)
+![Screen shot 1](./img/Screenshot_1.png)
 
-![Screen shot 2](./Screenshot_2.png)
+![Screen shot 2](./img/Screenshot_2.png)
 
-![Screen shot 3](./Screenshot_3.png)
+![Screen shot 3](./img/Screenshot_3.png)
+
+![Screen shot 4 SPI](./img/Screenshot_4.png)
 
 Written for the [Saleae Logic Pro 8 USB Logic Analyzer](https://www.sparkfun.com/products/13196):
 
