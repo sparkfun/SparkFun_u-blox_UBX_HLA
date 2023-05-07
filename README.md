@@ -43,7 +43,6 @@ Contributed by [@maehw](https://github.com/maehw) :
 
 * Add decoding of more message types.
 * Add proper support for the u-blox register layout and read transfers. Currently if the number of bytes in the I2C buffer is 0x62B5, the analyzer will attempt to decode that as a packet.
-* Add support for SPI.
 * Use ```I2C_ADDRESS_SETTING``` to filter messages on the selected I2C Address.
 
 ## Contributing
