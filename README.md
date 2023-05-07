@@ -17,11 +17,16 @@ Written for the [Saleae Logic Pro 8 USB Logic Analyzer](https://www.sparkfun.com
 
 * NMEA decoding (format and checksum only).
 * RTCM decoding (length, type and checksum only).
+* Add SPI support:
+  * Channel can be selected as miso or mosi.
+  * You can add two instances of the analyzer to monitor both channels simultaneously.
+* Add NAV-POSECEF and NAV-POSLLH.
+* Add M8 vs. M6 module selection.
 
 Contributed by [@maehw](https://github.com/maehw) :
 
 * Add support for decoding CFG-PRT, CFG-RST, CFG-MSG, MON-VER, MON-HW, NAV-STATUS and NAV-TIMEGPS messages.
-* Support for u-blox 6 and u-blox 8 Protocol Specifications.
+  * Includes support for u-blox 6 and u-blox 8 Protocol Specifications.
 
 ## v1.0.1
 

@@ -10,7 +10,8 @@ from saleae.data import GraphTimeDelta
 
 # I2C_ADDRESS_SETTING is not used in v1.0.0. TODO: provide filtering on the selected address only
 I2C_ADDRESS_SETTING = 'I2C Address (usually 66 = 0x42)'
-
+SPI_CHANNEL_SETTING = 'SPI Channel'
+UBLOX_MODULE_SETTING = 'u-blox Module'
 
 class Hla(HighLevelAnalyzer):
     temp_frame = None
@@ -220,6 +221,8 @@ class Hla(HighLevelAnalyzer):
 
     # Settings:
     i2c_address = NumberSetting(label=I2C_ADDRESS_SETTING, min_value=0, max_value=127)
+    spi_channel = ChoicesSetting(label=SPI_CHANNEL_SETTING, choices=('miso', 'mosi'))
+    ublox_module = ChoicesSetting(label=UBLOX_MODULE_SETTING, choices=('M8', 'M6'))
 
     # Base output formatting options:
     result_types = {
@@ -266,6 +269,12 @@ class Hla(HighLevelAnalyzer):
             'settings': {
                 I2C_ADDRESS_SETTING: {
                     'type': 'number'
+                },
+                SPI_CHANNEL_SETTING: {
+                    'type': 'text'
+                },
+                UBLOX_MODULE_SETTING: {
+                    'type': 'text'
                 },
             }
         }
@@ -405,10 +414,6 @@ class Hla(HighLevelAnalyzer):
         """
         Analyze frame according to the UBX interface description
 
-        v1.0.0 : Analyze UBX-ACK-ACK, UBX-ACK-NACK and UBX-NAV-PVT
-        v1.0.1 : Add UBX-RXM-PMP and UBX-INF-NOTICE, -ERROR and -WARNING
-        v1.0.2 : @maehw Add UBX-CFG-PRT, UBX-CFG-MSG, UBX-CFG-RST, UBX-MON-HW, UBX-MON-VER, UBX-NAV-STATUS, UBX-NAV-TIMEGPS
-
         Note to self: If/when NAV2 is added, self.id_val_list.index("CLOCK") etc. will find the index for NAV, not NAV2.
         """
 
@@ -442,7 +447,7 @@ class Hla(HighLevelAnalyzer):
                         return field
                 if self.length_MSB == 0 and self.length_LSB == 20:
                     # called 'reserved0' on M6 and 'reserved1' on M8
-                    success, field = self.analyze_unsigned(value, frame, 1, 1, 'res0M6_res1M8 ', 'hex')
+                    success, field = self.analyze_unsigned(value, frame, 1, 1, 'reserved ', 'hex')
                     if success:
                         return field
                     success, field = self.analyze_unsigned(value, frame, 2, 3, 'txReady ', 'hex')
@@ -461,11 +466,14 @@ class Hla(HighLevelAnalyzer):
                     if success:
                         return field
                     # called 'reserved4' on M6 and 'flags' on M8
-                    success, field = self.analyze_unsigned(value, frame, 16, 17, 'res4M6_flagsM8 ', 'hex')
+                    name = 'flags '
+                    if self.ublox_module == 'M6':
+                        name = 'reserved '
+                    success, field = self.analyze_unsigned(value, frame, 16, 17, name, 'hex')
                     if success:
                         return field
                     # called 'reserved5' on M6 and 'reserved2' on M8
-                    success, field = self.analyze_unsigned(value, frame, 18, 19, 'res5M6_res2M8 ', 'hex')
+                    success, field = self.analyze_unsigned(value, frame, 18, 19, 'reserved ', 'hex')
                     if success:
                         return field
 
@@ -515,6 +523,7 @@ class Hla(HighLevelAnalyzer):
             id_position = self.id_val_list.index("HW")
             if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == HW
 
+                # M8: 60 Bytes (VP is 17 bytes). M6: 68 Bytes (VP is 25 bytes).
                 success, field = self.analyze_unsigned(value, frame, 0, 3, 'pinSel ', 'hex')
                 if success:
                     return field
@@ -548,22 +557,25 @@ class Hla(HighLevelAnalyzer):
                 success, field = self.analyze_unsigned(value, frame, 24, 27, 'usedMask ', 'hex')
                 if success:
                     return field
-                success, field = self.analyze_array(value, frame, 28, 52, 'VP ', 'hex')
+                numPins = 17 # M8
+                if self.ublox_module == 'M6':
+                    numPins = 25
+                success, field = self.analyze_array(value, frame, 28, 28 + numPins - 1, 'VP ', 'hex')
                 if success:
                     return field
-                success, field = self.analyze_unsigned(value, frame, 53, 53, 'jamInd ', 'dec')
+                success, field = self.analyze_unsigned(value, frame, 28 + numPins, 28 + numPins, 'jamInd ', 'dec')
                 if success:
                     return field
-                success, field = self.analyze_unsigned(value, frame, 54, 55, 'reserved2 ', 'hex')
+                success, field = self.analyze_unsigned(value, frame, 28 + numPins + 1, 28 + numPins + 2, 'reserved2 ', 'hex')
                 if success:
                     return field
-                success, field = self.analyze_unsigned(value, frame, 56, 59, 'pinIrq ', 'hex')
+                success, field = self.analyze_unsigned(value, frame, 28 + numPins + 3, 28 + numPins + 6, 'pinIrq ', 'hex')
                 if success:
                     return field
-                success, field = self.analyze_unsigned(value, frame, 60, 63, 'pullH ', 'hex')
+                success, field = self.analyze_unsigned(value, frame, 28 + numPins + 7, 28 + numPins + 10, 'pullH ', 'hex')
                 if success:
                     return field
-                success, field = self.analyze_unsigned(value, frame, 64, 67, 'pullL ', 'hex')
+                success, field = self.analyze_unsigned(value, frame, 28 + numPins + 11, 28 + numPins + 14, 'pullL ', 'hex')
                 if success:
                     return field
 
@@ -579,6 +591,50 @@ class Hla(HighLevelAnalyzer):
 
         class_position = self.class_val_list.index("NAV")
         if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == NAV
+
+            id_position = self.id_val_list.index("POSECEF")
+            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == POSECEF
+
+                success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_signed(value, frame, 4, 7, 'ecefX ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_signed(value, frame, 8, 11, 'ecefY ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_signed(value, frame, 12, 15, 'ecefZ ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_unsigned(value, frame, 16, 19, 'pAcc ', 'dec')
+                if success:
+                    return field
+
+            id_position = self.id_val_list.index("POSLLH")
+            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == POSLLH
+
+                success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_signed(value, frame, 4, 7, 'lon ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_signed(value, frame, 8, 11, 'lat ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_signed(value, frame, 12, 15, 'height ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_signed(value, frame, 16, 19, 'hMSL ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_unsigned(value, frame, 20, 23, 'hAcc ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_unsigned(value, frame, 24, 27, 'vAcc ', 'dec')
+                if success:
+                    return field
 
             id_position = self.id_val_list.index("PVT")
             if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == PVT
@@ -876,12 +932,13 @@ class Hla(HighLevelAnalyzer):
         #     return
 
         # handle SPI byte
-        # if frame.type == "result":
-        #     char = ""
-        #     if "miso" in frame.data.keys() and frame.data["miso"] != 0:
-        #         char += chr(frame.data["miso"])
-        #     if "mosi" in frame.data.keys() and frame.data["mosi"] != 0:
-        #         char += chr(frame.data["mosi"])
+        if frame.type == "result":
+            if self.spi_channel == 'miso' and "miso" in frame.data.keys() and frame.data["miso"] != 0:
+                value = frame.data["miso"][0]
+                char = chr(value)
+            elif self.spi_channel == 'mosi' and "mosi" in frame.data.keys() and frame.data["mosi"] != 0:
+                value = frame.data["mosi"][0]
+                char = chr(value)
 
         # Check for a timeout event
         # if self.temp_frame is not None:
@@ -932,12 +989,12 @@ class Hla(HighLevelAnalyzer):
             elif value == self.dollar:
                 self.decode_state = self.looking_for_asterix
                 self.nmea_sum = 0 # Clear the checksum
-                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "NMEA"})
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "NMEA $"})
             elif value == self.rtcm_preamble:
                 self.decode_state = self.looking_for_RTCM_len1
                 self.rtcm_sum = 0 # CRC seed is 0
                 self.csum_rtcm(value) # Add preamble to rtcm_sum
-                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "RTCM"})
+                return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "RTCM 0xD3"})
             else:
                 self.clear_stored_message(frame)
                 return None
