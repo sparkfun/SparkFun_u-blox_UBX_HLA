@@ -563,27 +563,28 @@ class Hla(HighLevelAnalyzer):
                 success, field = self.analyze_unsigned(value, frame, 24, 27, 'usedMask ', 'hex')
                 if success:
                     return field
-                numPins = 17 # M8
-                if self.ublox_module == 'M6':
-                    numPins = 25
-                success, field = self.analyze_array(value, frame, 28, 28 + numPins - 1, 'VP ', 'hex')
-                if success:
-                    return field
-                success, field = self.analyze_unsigned(value, frame, 28 + numPins, 28 + numPins, 'jamInd ', 'dec')
-                if success:
-                    return field
-                success, field = self.analyze_unsigned(value, frame, 28 + numPins + 1, 28 + numPins + 2, 'reserved2 ', 'hex')
-                if success:
-                    return field
-                success, field = self.analyze_unsigned(value, frame, 28 + numPins + 3, 28 + numPins + 6, 'pinIrq ', 'hex')
-                if success:
-                    return field
-                success, field = self.analyze_unsigned(value, frame, 28 + numPins + 7, 28 + numPins + 10, 'pullH ', 'hex')
-                if success:
-                    return field
-                success, field = self.analyze_unsigned(value, frame, 28 + numPins + 11, 28 + numPins + 14, 'pullL ', 'hex')
-                if success:
-                    return field
+                if self.this_is_byte >= 28: # Prevent possible negative values below
+                    # M8: lastByte is 59 (VP is 17 bytes). M6: lastByte is 67 (VP is 25 bytes).
+                    lastByte = self.length_LSB + (self.length_MSB << 8) - 1
+                    vpNumber = "VP{} ".format(self.this_is_byte - 28)
+                    success, field = self.analyze_array(value, frame, 28, lastByte - 15, vpNumber, 'dec')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, lastByte - 14, lastByte - 14, 'jamInd ', 'dec')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, lastByte - 13, lastByte - 12, 'reserved2 ', 'hex')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, lastByte - 11, lastByte - 8, 'pinIrq ', 'hex')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, lastByte - 7, lastByte - 4, 'pullH ', 'hex')
+                    if success:
+                        return field
+                    success, field = self.analyze_unsigned(value, frame, lastByte - 3, lastByte, 'pullL ', 'hex')
+                    if success:
+                        return field
 
             id_position = self.id_val_list.index("VER")
             if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == VER
