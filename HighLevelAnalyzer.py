@@ -47,6 +47,13 @@ class Hla(HighLevelAnalyzer):
     looking_for_RTCM_csum2      = 21 # Looking for the second 8 bits of the CRC-24Q checksum
     looking_for_RTCM_csum3      = 22 # Looking for the third 8 bits of the CRC-24Q checksum
 
+    # Mini state machine to avoid I2C Bytes-Available being decoded as data
+    decode_normal = 0       # Decode bytes as normal
+    write_seen_check_FD = 1 # Go into this state when a _write_ to i2c_address is seen
+    FD_seen_check_read = 2  # Go into this state if 0xFD is seen immediately after the write
+    ignore_avail_LSB = 3    # Ignore this byte - it is the LSB of Bytes-Available
+    ignore_avail_MSB = 4    # Ignore this byte - it is the MSB of Bytes-Available
+
     # UBX Class
     UBX_CLASS = {
         0x05: "ACK",
@@ -220,7 +227,7 @@ class Hla(HighLevelAnalyzer):
     id_val_list = list(UBX_ID.values())
 
     # Settings:
-    i2c_address = NumberSetting(label=I2C_ADDRESS_SETTING, min_value=0, max_value=127)
+    i2c_address = NumberSetting(label=I2C_ADDRESS_SETTING, min_value=1, max_value=127)
     spi_channel = ChoicesSetting(label=SPI_CHANNEL_SETTING, choices=('miso', 'mosi'))
     ublox_module = ChoicesSetting(label=UBLOX_MODULE_SETTING, choices=('M8', 'M6'))
 
@@ -238,7 +245,16 @@ class Hla(HighLevelAnalyzer):
 
         self.ID = None
 
-        self.decode_state = None
+        # The decode state machine
+        self.decode_state = self.sync_lost
+
+        # For I2C, we need a way to ignore the two Bytes-Available bytes read from register 0xFD
+        # to prevent them from being decoded as data
+        self.bytes_avail_state = self.decode_normal
+
+        # For I2C, we need a way to ignore any traffic to/from other devices on the bus otherwise
+        # it can confuse the decoder. Only analyze data when self.addressMatch is True.
+        self.addressMatch = True
 
         self.this_is_byte = None
         self.bytes_to_process = None
@@ -263,21 +279,32 @@ class Hla(HighLevelAnalyzer):
             'format': '{{{data.str}}}'
         }
 
-    @staticmethod
-    def get_capabilities():
-        return {
-            'settings': {
-                I2C_ADDRESS_SETTING: {
-                    'type': 'number'
-                },
-                SPI_CHANNEL_SETTING: {
-                    'type': 'text'
-                },
-                UBLOX_MODULE_SETTING: {
-                    'type': 'text'
-                },
-            }
-        }
+    # def get_capabilities(self): # Deprecated?
+    #     return {
+    #         'settings': {
+    #             I2C_ADDRESS_SETTING: {
+    #                 'type': 'number',
+    #                 'minimum': 1,
+    #                 'maximum': 127
+    #             },
+    #             SPI_CHANNEL_SETTING: {
+    #                 'type': 'choices',
+    #                 'choices': ('miso', 'mosi')
+    #             },
+    #             UBLOX_MODULE_SETTING: {
+    #                 'type': 'choices',
+    #                 'choices': ('M8', 'M6')
+    #             },
+    #         }
+    #     }
+    
+    # def set_settings(self, settings): # Deprecated?
+    #     if I2C_ADDRESS_SETTING in settings.keys():
+    #         self.i2c_address = settings[I2C_ADDRESS_SETTING]
+    #     if SPI_CHANNEL_SETTING in settings.keys():
+    #         self.spi_channel = settings[SPI_CHANNEL_SETTING]
+    #     if UBLOX_MODULE_SETTING in settings.keys():
+    #         self.ublox_module = settings[UBLOX_MODULE_SETTING]
 
     def clear_stored_message(self, frame):
         self.temp_frame = AnalyzerFrame('message', frame.start_time, frame.end_time, {
@@ -912,7 +939,7 @@ class Hla(HighLevelAnalyzer):
                 if success:
                     return field
 
-        return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '.'})
+        return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '.'}) # default to printing a dot for any undecoded bytes
 
     def decode(self, frame: AnalyzerFrame):
 
@@ -926,11 +953,50 @@ class Hla(HighLevelAnalyzer):
         value = None
         char = None
 
+        # handle I2C address frames (read and write)
+        if frame.type == "address":
+            if frame.data["address"][0] == self.i2c_address: # Is this the address we are looking for?
+                self.addressMatch = True
+
+                # Mini state machine to avoid I2C Bytes-Available being decoded as data
+                if frame.data["read"] == False: # If this is a Write to our address
+                    if self.bytes_avail_state == self.decode_normal:
+                        self.bytes_avail_state = self.write_seen_check_FD # Check for 0xFD
+                else: # Else if this is a read from our address
+                    if self.bytes_avail_state == self.FD_seen_check_read:
+                        self.bytes_avail_state = self.ignore_avail_LSB
+                    else:
+                        self.bytes_avail_state = self.decode_normal
+            
+            else:
+                self.addressMatch = False
+
+            return None
+
+        # exit if we do not have an address match
+        if not self.addressMatch:
+            return None
+
         # handle serial data and I2C data
         if frame.type == "data" and "data" in frame.data.keys():
             value = frame.data["data"][0]
             char = chr(value)
-            # return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': char}) # Useful for debugging
+
+            # Check Bytes-Available state machine
+            # This only applies to I2C
+            # For serial, self.bytes_avail_state will always be self.decode_normal
+            if self.bytes_avail_state == self.write_seen_check_FD:
+                if value == 0xFD:
+                    self.bytes_avail_state = self.FD_seen_check_read
+                    return None
+                else:
+                    self.bytes_avail_state = self.decode_normal
+            elif self.bytes_avail_state == self.ignore_avail_LSB:
+                self.bytes_avail_state = self.ignore_avail_MSB
+                return None
+            elif self.bytes_avail_state == self.ignore_avail_MSB:
+                self.bytes_avail_state = self.decode_normal
+                return None
 
         # handle I2C address
         # if frame.type == "address":
@@ -1087,6 +1153,7 @@ class Hla(HighLevelAnalyzer):
                 return result
             else:
                 self.decode_state = self.looking_for_checksum_A
+                # No return. Fall through to self.looking_for_checksum_A.
 
         # Checksum A
         if self.decode_state == self.looking_for_checksum_A:
@@ -1124,7 +1191,7 @@ class Hla(HighLevelAnalyzer):
             return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': char})
 
         # NMEA Checksum 1
-        if self.decode_state == self.looking_for_csum1:
+        elif self.decode_state == self.looking_for_csum1:
             if value != self.nmea_expected_csum1:
                 self.decode_state = self.sync_lost
                 self.clear_stored_message(frame)
@@ -1134,7 +1201,7 @@ class Hla(HighLevelAnalyzer):
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CSUM1"})
 
         # NMEA Checksum 2
-        if self.decode_state == self.looking_for_csum2:
+        elif self.decode_state == self.looking_for_csum2:
             if value != self.nmea_expected_csum2:
                 self.decode_state = self.sync_lost
                 self.clear_stored_message(frame)
@@ -1144,7 +1211,7 @@ class Hla(HighLevelAnalyzer):
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CSUM2"})
 
         # NMEA Terminator 1 (CR)
-        if self.decode_state == self.looking_for_term1:
+        elif self.decode_state == self.looking_for_term1:
             if value != 0x0D:
                 self.decode_state = self.sync_lost
                 self.clear_stored_message(frame)
@@ -1154,7 +1221,7 @@ class Hla(HighLevelAnalyzer):
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "CR"})
 
         # NMEA Terminator 2 (LF)
-        if self.decode_state == self.looking_for_term2:
+        elif self.decode_state == self.looking_for_term2:
             if value != 0x0A:
                 self.decode_state = self.sync_lost
                 self.clear_stored_message(frame)
@@ -1209,7 +1276,7 @@ class Hla(HighLevelAnalyzer):
             return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "0x{:02X}".format(value)})
 
         # RTCM Checksum 1
-        if self.decode_state == self.looking_for_RTCM_csum1:
+        elif self.decode_state == self.looking_for_RTCM_csum1:
             if value != ((self.rtcm_sum >> 16) & 0xFF):
                 self.decode_state = self.sync_lost
                 self.clear_stored_message(frame)
@@ -1219,7 +1286,7 @@ class Hla(HighLevelAnalyzer):
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CSUM1"})
 
         # RTCM Checksum 2
-        if self.decode_state == self.looking_for_RTCM_csum2:
+        elif self.decode_state == self.looking_for_RTCM_csum2:
             if value != ((self.rtcm_sum >> 8) & 0xFF):
                 self.decode_state = self.sync_lost
                 self.clear_stored_message(frame)
@@ -1229,7 +1296,7 @@ class Hla(HighLevelAnalyzer):
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CSUM2"})
 
         # RTCM Checksum 3
-        if self.decode_state == self.looking_for_RTCM_csum3:
+        elif self.decode_state == self.looking_for_RTCM_csum3:
             if value != (self.rtcm_sum & 0xFF):
                 self.decode_state = self.sync_lost
                 self.clear_stored_message(frame)
@@ -1239,6 +1306,5 @@ class Hla(HighLevelAnalyzer):
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "Valid CSUM3"})
 
         # This should never happen...
-        else:
-            self.clear_stored_message(frame)
-            return None
+        self.clear_stored_message(frame)
+        return None
