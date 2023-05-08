@@ -1082,6 +1082,7 @@ class Hla(HighLevelAnalyzer):
             elif value == self.dollar:
                 self.decode_state = self.looking_for_asterix
                 self.nmea_sum = 0 # Clear the checksum
+                self.this_is_byte = 0
                 return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': "NMEA $"})
             elif value == self.rtcm_preamble:
                 self.decode_state = self.looking_for_RTCM_len1
@@ -1178,8 +1179,15 @@ class Hla(HighLevelAnalyzer):
 
         # Process NMEA payload
         elif self.decode_state == self.looking_for_asterix:
+            if self.this_is_byte == 0: # Start of a new NMEA message
+                self.field_string = char
+                self.start_time = frame.start_time
+            else:
+                self.field_string += char # Add char to the existing message
+            self.this_is_byte += 1 # TODO: use this_is_byte to check for excessive message length (i.e. missing or corrupt asterix)
             if value != self.asterix: # Add value to checksum
                 self.csum_nmea(value)
+                return None
             else: 
                 self.nmea_expected_csum1 = ((self.nmea_sum & 0xf0) >> 4) + 0x30 # Convert MS nibble to ASCII hex
                 if (self.nmea_expected_csum1 >= 0x3A): # : follows 9 so add 7 to convert to A-F
@@ -1188,7 +1196,7 @@ class Hla(HighLevelAnalyzer):
                 if (self.nmea_expected_csum2 >= 0x3A): # : follows 9 so add 7 to convert to A-F
                     self.nmea_expected_csum2 += 7
                 self.decode_state = self.looking_for_csum1
-            return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': char})
+                return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': self.field_string})
 
         # NMEA Checksum 1
         elif self.decode_state == self.looking_for_csum1:
@@ -1258,7 +1266,7 @@ class Hla(HighLevelAnalyzer):
             self.start_time = frame.start_time
             return None
 
-        # Check for RTCM Type MSB
+        # Check for RTCM Type LSB
         elif self.decode_state == self.looking_for_RTCM_type2:
             self.decode_state = self.processing_RTCM_payload
             self.rtcm_type = (self.rtcm_type << 4) | (value >> 4)
