@@ -44,6 +44,8 @@ Contributed by [@maehw](https://github.com/maehw) :
 * Add decoding of more message types.
 * Add proper support for the u-blox register layout and read transfers. Currently if the number of bytes in the I2C buffer is 0x62B5, the analyzer will attempt to decode that as a packet.
 * Use ```I2C_ADDRESS_SETTING``` to filter messages on the selected I2C Address.
+* Highlight UBX, NMEA, RTCM and checksum errors in different colors. 
+  * Requires a new Logic2 HLA color field feature: [please vote for it here](https://ideas.saleae.com/b/feature-requests/add-hla-color-field-to-result-type/)
 
 ## Contributing
 
