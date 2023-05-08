@@ -447,7 +447,10 @@ class Hla(HighLevelAnalyzer):
                         return field
                 if self.length_MSB == 0 and self.length_LSB == 20:
                     # called 'reserved0' on M6 and 'reserved1' on M8
-                    success, field = self.analyze_unsigned(value, frame, 1, 1, 'reserved ', 'hex')
+                    name = 'reserved1 '
+                    if self.ublox_module == 'M6':
+                        name = 'reserved0 '
+                    success, field = self.analyze_unsigned(value, frame, 1, 1, name, 'hex')
                     if success:
                         return field
                     success, field = self.analyze_unsigned(value, frame, 2, 3, 'txReady ', 'hex')
@@ -468,12 +471,15 @@ class Hla(HighLevelAnalyzer):
                     # called 'reserved4' on M6 and 'flags' on M8
                     name = 'flags '
                     if self.ublox_module == 'M6':
-                        name = 'reserved '
+                        name = 'reserved4 '
                     success, field = self.analyze_unsigned(value, frame, 16, 17, name, 'hex')
                     if success:
                         return field
                     # called 'reserved5' on M6 and 'reserved2' on M8
-                    success, field = self.analyze_unsigned(value, frame, 18, 19, 'reserved ', 'hex')
+                    name = 'reserved2 '
+                    if self.ublox_module == 'M6':
+                        name = 'reserved5 '
+                    success, field = self.analyze_unsigned(value, frame, 18, 19, name, 'hex')
                     if success:
                         return field
 
@@ -581,14 +587,35 @@ class Hla(HighLevelAnalyzer):
 
             id_position = self.id_val_list.index("VER")
             if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == VER
-                # read the whole version information as one blob; should be NULL-terminated C string, but not seen as such
-                assert(self.length_MSB == 0)
-                versionLength = self.length_LSB
+                # M6 sends swVersion[30], hwVersion[10], romVersion[30], extension[30 * N]
+                # M8 sends swVersion[30], hwVersion[10], extension[30 * N]
 
-                success, field = self.analyze_string(value, frame, 0, versionLength-1, f'version info (len={versionLength}): ')
-                if success:
-                    return field
+                if self.this_is_byte <= 39:
+                    success, field = self.analyze_string(value, frame, 0, 29, 'swVersion ')
+                    if success:
+                        return field
+                    
+                    success, field = self.analyze_string(value, frame, 30, 39, 'hwVersion ')
+                    if success:
+                        return field
+                
+                elif self.this_is_byte <= 69 and self.ublox_module == 'M6':
+                
+                    success, field = self.analyze_string(value, frame, 40, 69, 'romVersion ')
+                    if success:
+                        return field
+                
+                else:
+                    startByte = self.this_is_byte - 10 # Subtract 10 for the hwVersion
+                    startByte //= 30 # Modulo 30
+                    startByte *= 30
+                    startByte += 10
 
+                    success, field = self.analyze_string(value, frame, startByte, startByte + 29, 'extension ')
+                    if success:
+                        return field
+
+                
         class_position = self.class_val_list.index("NAV")
         if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == NAV
 
