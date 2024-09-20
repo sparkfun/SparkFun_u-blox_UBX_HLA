@@ -26,6 +26,7 @@ Written for the [Saleae Logic Pro 8 USB Logic Analyzer](https://www.sparkfun.com
 * Add M8 vs. M6 module selection.
 * Includes support for ```I2C_ADDRESS_SETTING```
   * Only messages to/from the selected I2C Address are decoded.
+  * You can add two instances of the analyzer to monitor (e.g.) 0x42 (ZED-F9P) and 0x43 (NEO-D9S) simultaneously.
 * Includes support for the u-blox register layout in I2C transfers:
   * The decoder will skip over the two Bytes-Available bytes returned from Registers 0xFD and 0xFE.
   * This prevents accidental decoding of 0xB5, '$' or 0xD3 as the start of UBX/NMEA/RTCM data.
