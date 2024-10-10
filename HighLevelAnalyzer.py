@@ -652,13 +652,13 @@ class Hla(HighLevelAnalyzer):
                 success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
                 if success:
                     return field
-                success, field = self.analyze_signed(value, frame, 4, 7, 'ecefX ', 'dec')
+                success, field = self.analyze_signed(value, frame, 4, 7, 'ecefX ')
                 if success:
                     return field
-                success, field = self.analyze_signed(value, frame, 8, 11, 'ecefY ', 'dec')
+                success, field = self.analyze_signed(value, frame, 8, 11, 'ecefY ')
                 if success:
                     return field
-                success, field = self.analyze_signed(value, frame, 12, 15, 'ecefZ ', 'dec')
+                success, field = self.analyze_signed(value, frame, 12, 15, 'ecefZ ')
                 if success:
                     return field
                 success, field = self.analyze_unsigned(value, frame, 16, 19, 'pAcc ', 'dec')
@@ -671,16 +671,16 @@ class Hla(HighLevelAnalyzer):
                 success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
                 if success:
                     return field
-                success, field = self.analyze_signed(value, frame, 4, 7, 'lon ', 'dec')
+                success, field = self.analyze_signed(value, frame, 4, 7, 'lon ')
                 if success:
                     return field
-                success, field = self.analyze_signed(value, frame, 8, 11, 'lat ', 'dec')
+                success, field = self.analyze_signed(value, frame, 8, 11, 'lat ')
                 if success:
                     return field
-                success, field = self.analyze_signed(value, frame, 12, 15, 'height ', 'dec')
+                success, field = self.analyze_signed(value, frame, 12, 15, 'height ')
                 if success:
                     return field
-                success, field = self.analyze_signed(value, frame, 16, 19, 'hMSL ', 'dec')
+                success, field = self.analyze_signed(value, frame, 16, 19, 'hMSL ')
                 if success:
                     return field
                 success, field = self.analyze_unsigned(value, frame, 20, 23, 'hAcc ', 'dec')
