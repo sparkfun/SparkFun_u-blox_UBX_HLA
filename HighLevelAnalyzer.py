@@ -66,7 +66,17 @@ class Hla(HighLevelAnalyzer):
         0x29: "NAV2",
         0x02: "RXM",
         0x27: "SEC",
+        0x0b: "AID",
+        0x0d: "DBG",
         0x0d: "TIM",
+        0x10: "ESF",
+        0x28: "HNR",
+        0xF0: "NMEA",
+        0xF1: "PUBX",
+        0xF4: "RTCM2",
+        0xF5: "RTCM3",
+        0xF6: "SPARTN",
+        0xF7: "NMEA-NAV2",
         0x09: "UPD"
     }
 
@@ -211,11 +221,23 @@ class Hla(HighLevelAnalyzer):
         (0x02, 0x33): "SPARTN",
         (0x02, 0x36): "SPARTNKEY",
         # SEC
+        (0x27, 0x01): "SIGN",
         (0x27, 0x03): "UNIQID",
+        (0x27, 0x04): "ECSIGN",
+        (0x27, 0x05): "SESSID",
+        (0x27, 0x0A): "OSNMA",
         # TIM
-        (0x0d, 0x03): "TM2",
         (0x0d, 0x01): "TP",
+        (0x0d, 0x03): "TM2",
+        (0x0d, 0x04): "SVIN",
+        (0x0d, 0x05): "SYNC",
         (0x0d, 0x06): "VRFY",
+        (0x0d, 0x11): "DOSC",
+        (0x0d, 0x12): "TOS",
+        (0x0d, 0x13): "SMEAS",
+        (0x0d, 0x15): "VCOCAL",
+        (0x0d, 0x16): "FCHG",
+        (0x0d, 0x17): "HOC",
         # UPD
         (0x09, 0x14): "SOS"
     }
