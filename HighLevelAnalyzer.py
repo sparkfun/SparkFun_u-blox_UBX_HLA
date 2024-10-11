@@ -8,7 +8,6 @@
 from saleae.analyzers import HighLevelAnalyzer, AnalyzerFrame, StringSetting, NumberSetting, ChoicesSetting
 from saleae.data import GraphTimeDelta
 
-# I2C_ADDRESS_SETTING is not used in v1.0.0. TODO: provide filtering on the selected address only
 I2C_ADDRESS_SETTING = 'I2C Address (usually 66 = 0x42)'
 SPI_CHANNEL_SETTING = 'SPI Channel'
 UBLOX_MODULE_SETTING = 'u-blox Module'
