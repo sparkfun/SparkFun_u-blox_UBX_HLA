@@ -60,7 +60,7 @@ class Hla(HighLevelAnalyzer):
         0x04: "INF",
         0x05: "ACK",
         0x06: "CFG",
-        0x09: "UPD"
+        0x09: "UPD",
         0x0a: "MON",
         0x0b: "AID",
         0x0c: "DBG",
@@ -76,7 +76,7 @@ class Hla(HighLevelAnalyzer):
         0xF4: "RTCM2",
         0xF5: "RTCM3",
         0xF6: "SPARTN",
-        0xF7: "NMEA-NAV2",
+        0xF7: "NMEA-NAV2"
     }
 
     # UBX ID (Alphabetical order - as per the interface description)
