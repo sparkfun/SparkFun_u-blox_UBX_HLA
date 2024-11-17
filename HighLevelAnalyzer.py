@@ -8,7 +8,6 @@
 from saleae.analyzers import HighLevelAnalyzer, AnalyzerFrame, StringSetting, NumberSetting, ChoicesSetting
 from saleae.data import GraphTimeDelta
 
-# I2C_ADDRESS_SETTING is not used in v1.0.0. TODO: provide filtering on the selected address only
 I2C_ADDRESS_SETTING = 'I2C Address (usually 66 = 0x42)'
 SPI_CHANNEL_SETTING = 'SPI Channel'
 UBLOX_MODULE_SETTING = 'u-blox Module'
@@ -54,34 +53,49 @@ class Hla(HighLevelAnalyzer):
     ignore_avail_LSB = 3    # Ignore this byte - it is the LSB of Bytes-Available
     ignore_avail_MSB = 4    # Ignore this byte - it is the MSB of Bytes-Available
 
-    # UBX Class
+    # UBX Class (Numerical order)
     UBX_CLASS = {
+        0x01: "NAV",
+        0x02: "RXM",
+        0x04: "INF",
         0x05: "ACK",
         0x06: "CFG",
-        0x04: "INF",
-        0x21: "LOG",
-        0x13: "MGA",
+        0x09: "UPD",
         0x0a: "MON",
-        0x01: "NAV",
-        0x29: "NAV2",
-        0x02: "RXM",
-        0x27: "SEC",
+        0x0b: "AID",
+        0x0c: "DBG",
         0x0d: "TIM",
-        0x09: "UPD"
+        0x10: "ESF",
+        0x13: "MGA",
+        0x21: "LOG",
+        0x27: "SEC",
+        0x28: "HNR",
+        0x29: "NAV2",
+        0xF0: "NMEA",
+        0xF1: "PUBX",
+        0xF4: "RTCM2",
+        0xF5: "RTCM3",
+        0xF6: "SPARTN",
+        0xF7: "NMEA-NAV2"
     }
 
-    # UBX ID
+    # UBX ID (Alphabetical order - as per the interface description)
     UBX_ID = {
         # ACK
         (0x05, 0x01): "ACK",
         (0x05, 0x00): "NACK",
         # CFG
         (0x06, 0x13): "ANT",
+        (0x06, 0x93): "BATCH",
         (0x06, 0x09): "CFG",
         (0x06, 0x06): "DAT",
         (0x06, 0x70): "DGNSS",
+        (0x06, 0x4c): "ESFA",
+        (0x06, 0x56): "ESFALG",
+        (0x06, 0x4d): "ESFG",
         (0x06, 0x69): "GEOFENCE",
         (0x06, 0x3e): "GNSS",
+        (0x06, 0x5c): "HNR",
         (0x06, 0x02): "INF",
         (0x06, 0x39): "ITFM",
         (0x06, 0x47): "LOGFILTER",
@@ -90,6 +104,8 @@ class Hla(HighLevelAnalyzer):
         (0x06, 0x23): "NAVX5",
         (0x06, 0x17): "NMEA",
         (0x06, 0x1e): "ODO",
+        (0x06, 0x3b): "PM2",
+        (0x06, 0x86): "PMS",
         (0x06, 0x00): "PRT",
         (0x06, 0x57): "PWR",
         (0x06, 0x08): "RATE",
@@ -102,6 +118,17 @@ class Hla(HighLevelAnalyzer):
         (0x06, 0x8c): "VALDEL",
         (0x06, 0x8b): "VALGET",
         (0x06, 0x8a): "VALSET",
+        # ESF
+        (0x10, 0x14): "ALG",
+        (0x10, 0x15): "INS",
+        (0x10, 0x02): "MEAS",
+        (0x10, 0x03): "RAW",
+        (0x10, 0x13): "RESETALG",
+        (0x10, 0x10): "STATUS",
+        # HNR
+        (0x28, 0x01): "ATT",
+        (0x28, 0x02): "INS",
+        (0x28, 0x00): "PVT",
         # INF
         (0x04, 0x04): "DEBUG",
         (0x04, 0x00): "ERROR",
@@ -120,8 +147,10 @@ class Hla(HighLevelAnalyzer):
         (0x21, 0x04): "STRING",
         # MGA
         (0x13, 0x60): "ACK",
+        (0x13, 0x20): "ANO",
         (0x13, 0x03): "BDS",
         (0x13, 0x80): "DBD",
+        (0x13, 0x21): "FLASH",
         (0x13, 0x02): "GAL",
         (0x13, 0x06): "GLO",
         (0x13, 0x00): "GPS",
@@ -136,26 +165,37 @@ class Hla(HighLevelAnalyzer):
         (0x0a, 0x02): "IO",
         (0x0a, 0x06): "MSGPP",
         (0x0a, 0x27): "PATCH",
+        (0x0a, 0x35): "PMP",
+        (0x0a, 0x2b): "PT2",
         (0x0a, 0x38): "RF",
         (0x0a, 0x07): "RXBUF",
         (0x0a, 0x21): "RXR",
+        (0x0a, 0x2e): "SMGR",
         (0x0a, 0x31): "SPAN",
         (0x0a, 0x39): "SYS",
+        (0x0a, 0x0e): "TEMP",
         (0x0a, 0x08): "TXBUF",
         (0x0a, 0x04): "VER",
         # NAV
+        (0x01, 0x05): "ATT",
+        (0x01, 0x60): "AOPSTATUS",
         (0x01, 0x22): "CLOCK",
         (0x01, 0x36): "COV",
+        (0x01, 0x31): "DGPS",
         (0x01, 0x04): "DOP",
+        (0x01, 0x3d): "EELL",
         (0x01, 0x61): "EOE",
         (0x01, 0x39): "GEOFENCE",
+        (0x01, 0x37): "HNR",
         (0x01, 0x13): "HPPOSECEF",
         (0x01, 0x14): "HPPOSLLH",
+        (0x01, 0x28): "NMI",
         (0x01, 0x09): "ODO",
         (0x01, 0x34): "ORB",
         (0x01, 0x62): "PL",
         (0x01, 0x01): "POSECEF",
         (0x01, 0x02): "POSLLH",
+        (0x01, 0x17): "PVAT",
         (0x01, 0x07): "PVT",
         (0x01, 0x3C): "RELPOSNED",
         (0x01, 0x10): "RESETODO",
@@ -163,25 +203,32 @@ class Hla(HighLevelAnalyzer):
         (0x01, 0x32): "SBAS",
         (0x01, 0x43): "SIG",
         (0x01, 0x42): "SLAS",
+        (0x01, 0x06): "SOL",
         (0x01, 0x03): "STATUS",
         (0x01, 0x3B): "SVIN",
+        (0x01, 0x30): "SVINFO",
         (0x01, 0x24): "TIMEBDS",
         (0x01, 0x25): "TIMEGAL",
         (0x01, 0x23): "TIMEGLO",
         (0x01, 0x20): "TIMEGPS",
         (0x01, 0x26): "TIMELS",
-        (0x01, 0x27): "TIMEQZSS",
         (0x01, 0x21): "TIMEUTC",
+        (0x01, 0x63): "TIMENAVIC",
+        (0x01, 0x27): "TIMEQZSS",
+        (0x01, 0x64): "TIMETRUSTED",
         (0x01, 0x11): "VELECEF",
         (0x01, 0x12): "VELNED",
         # NAV2
         (0x29, 0x22): "CLOCK",
         (0x29, 0x36): "COV",
+        (0x29, 0x31): "DGPS",
         (0x29, 0x04): "DOP",
         (0x29, 0x61): "EOE",
+        (0x29, 0x3d): "EELL",
         (0x29, 0x09): "ODO",
         (0x29, 0x01): "POSECEF",
         (0x29, 0x02): "POSLLH",
+        (0x29, 0x17): "PVAT",
         (0x29, 0x07): "PVT",
         (0x29, 0x35): "SAT",
         (0x29, 0x32): "SBAS",
@@ -194,12 +241,17 @@ class Hla(HighLevelAnalyzer):
         (0x29, 0x23): "TIMEGLO",
         (0x29, 0x20): "TIMEGPS",
         (0x29, 0x26): "TIMELS",
-        (0x29, 0x27): "TIMEQZSS",
+        (0x29, 0x63): "TIMENAVIC",
         (0x29, 0x21): "TIMEUTC",
+        (0x29, 0x27): "TIMEQZSS",
         (0x29, 0x11): "VELECEF",
         (0x29, 0x12): "VELNED",
         # RXM
         (0x02, 0x34): "COR",
+        (0x02, 0x84): "MEAS20",
+        (0x02, 0x86): "MEAS50",
+        (0x02, 0x82): "MEASC12",
+        (0x02, 0x80): "MEASD12",
         (0x02, 0x14): "MEASX",
         (0x02, 0x72): "PMP",
         (0x02, 0x41): "PMREQ",
@@ -211,10 +263,24 @@ class Hla(HighLevelAnalyzer):
         (0x02, 0x33): "SPARTN",
         (0x02, 0x36): "SPARTNKEY",
         # SEC
+        (0x27, 0x04): "ECSIGN",
+        (0x27, 0x0A): "OSNMA",
+        (0x27, 0x05): "SESSID",
+        (0x27, 0x09): "SIG",
+        (0x27, 0x10): "SIGLOG",
+        (0x27, 0x01): "SIGN",
         (0x27, 0x03): "UNIQID",
         # TIM
+        (0x0d, 0x11): "DOSC",
+        (0x0d, 0x16): "FCHG",
+        (0x0d, 0x17): "HOC",
+        (0x0d, 0x13): "SMEAS",
+        (0x0d, 0x04): "SVIN",
+        (0x0d, 0x05): "SYNC",
         (0x0d, 0x03): "TM2",
+        (0x0d, 0x12): "TOS",
         (0x0d, 0x01): "TP",
+        (0x0d, 0x15): "VCOCAL",
         (0x0d, 0x06): "VRFY",
         # UPD
         (0x09, 0x14): "SOS"
@@ -454,10 +520,18 @@ class Hla(HighLevelAnalyzer):
 
                 if self.this_is_byte == 0:
                     self.ack_class = value
-                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': self.UBX_CLASS[value]})
+                    if value in self.UBX_CLASS:
+                        class_str = self.UBX_CLASS[value]
+                    else:
+                        class_str = 'Class'
+                    return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': class_str})
                 elif self.this_is_byte == 1:
+                    if (self.ack_class, value) in self.UBX_ID:
+                        id_str = self.UBX_ID[self.ack_class, value]
+                    else:
+                        id_str = 'ID'
                     return AnalyzerFrame('message', frame.start_time, frame.end_time,
-                                         {'str': self.UBX_ID[self.ack_class, value]})
+                                         {'str': id_str})
                 else:
                     return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '?'})
 

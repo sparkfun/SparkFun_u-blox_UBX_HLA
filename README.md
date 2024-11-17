@@ -15,6 +15,12 @@ Written for the [Saleae Logic Pro 8 USB Logic Analyzer](https://www.sparkfun.com
 
 [![Saleae Logic Pro 8 USB Logic Analyzer](https://cdn.sparkfun.com//assets/parts/1/0/3/3/0/13196-04.jpg)](https://www.sparkfun.com/products/13196)
 
+## v1.0.4
+
+Contributed by [@cturvey](https://github.com/cturvey) :
+
+* Filled out the Classes and Public Commands (PR #5)
+
 ## v1.0.3
 
 * Bug fix: correct calls to analyze_signed in POSECEF and POSLLH
