@@ -522,8 +522,12 @@ class Hla(HighLevelAnalyzer):
                     self.ack_class = value
                     return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': self.UBX_CLASS[value]})
                 elif self.this_is_byte == 1:
+                    if (self.ack_class, value) in self.UBX_ID:
+                        id_str = self.UBX_ID[self.ack_class, value]
+                    else:
+                        id_str = 'ID'
                     return AnalyzerFrame('message', frame.start_time, frame.end_time,
-                                         {'str': self.UBX_ID[self.ack_class, value]})
+                                         {'str': id_str})
                 else:
                     return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '?'})
 
