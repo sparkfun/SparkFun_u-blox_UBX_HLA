@@ -15,6 +15,11 @@ Written for the [Saleae Logic Pro 8 USB Logic Analyzer](https://www.sparkfun.com
 
 [![Saleae Logic Pro 8 USB Logic Analyzer](https://cdn.sparkfun.com//assets/parts/1/0/3/3/0/13196-04.jpg)](https://www.sparkfun.com/products/13196)
 
+## v1.0.5
+
+* Corrected the detection of NAV-PVT and NAV-ATT
+* Added decoding of the first key in CFG-VALSET, VALGET and VALDEL
+
 ## v1.0.4
 
 Contributed by [@cturvey](https://github.com/cturvey) :
