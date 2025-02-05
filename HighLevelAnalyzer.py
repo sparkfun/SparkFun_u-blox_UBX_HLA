@@ -82,208 +82,208 @@ class Hla(HighLevelAnalyzer):
     # UBX ID (Alphabetical order - as per the interface description)
     UBX_ID = {
         # ACK
-        (0x05, 0x01): "ACK",
-        (0x05, 0x00): "NACK",
+        (0x05, 0x01): ("ACK", "ACK"),
+        (0x05, 0x00): ("ACK", "NACK"),
         # CFG
-        (0x06, 0x13): "ANT",
-        (0x06, 0x93): "BATCH",
-        (0x06, 0x09): "CFG",
-        (0x06, 0x06): "DAT",
-        (0x06, 0x70): "DGNSS",
-        (0x06, 0x4c): "ESFA",
-        (0x06, 0x56): "ESFALG",
-        (0x06, 0x4d): "ESFG",
-        (0x06, 0x69): "GEOFENCE",
-        (0x06, 0x3e): "GNSS",
-        (0x06, 0x5c): "HNR",
-        (0x06, 0x02): "INF",
-        (0x06, 0x39): "ITFM",
-        (0x06, 0x47): "LOGFILTER",
-        (0x06, 0x01): "MSG",
-        (0x06, 0x24): "NAV5",
-        (0x06, 0x23): "NAVX5",
-        (0x06, 0x17): "NMEA",
-        (0x06, 0x1e): "ODO",
-        (0x06, 0x3b): "PM2",
-        (0x06, 0x86): "PMS",
-        (0x06, 0x00): "PRT",
-        (0x06, 0x57): "PWR",
-        (0x06, 0x08): "RATE",
-        (0x06, 0x34): "RINV",  # poll contents of remote inventory
-        (0x06, 0x04): "RST",
-        (0x06, 0x16): "SBAS",
-        (0x06, 0x71): "TMODE3",
-        (0x06, 0x31): "TP5",
-        (0x06, 0x1b): "USB",
-        (0x06, 0x8c): "VALDEL",
-        (0x06, 0x8b): "VALGET",
-        (0x06, 0x8a): "VALSET",
+        (0x06, 0x13): ("CFG", "ANT"),
+        (0x06, 0x93): ("CFG", "BATCH"),
+        (0x06, 0x09): ("CFG", "CFG"),
+        (0x06, 0x06): ("CFG", "DAT"),
+        (0x06, 0x70): ("CFG", "DGNSS"),
+        (0x06, 0x4c): ("CFG", "ESFA"),
+        (0x06, 0x56): ("CFG", "ESFALG"),
+        (0x06, 0x4d): ("CFG", "ESFG"),
+        (0x06, 0x69): ("CFG", "GEOFENCE"),
+        (0x06, 0x3e): ("CFG", "GNSS"),
+        (0x06, 0x5c): ("CFG", "HNR"),
+        (0x06, 0x02): ("CFG", "INF"),
+        (0x06, 0x39): ("CFG", "ITFM"),
+        (0x06, 0x47): ("CFG", "LOGFILTER"),
+        (0x06, 0x01): ("CFG", "MSG"),
+        (0x06, 0x24): ("CFG", "NAV5"),
+        (0x06, 0x23): ("CFG", "NAVX5"),
+        (0x06, 0x17): ("CFG", "NMEA"),
+        (0x06, 0x1e): ("CFG", "ODO"),
+        (0x06, 0x3b): ("CFG", "PM2"),
+        (0x06, 0x86): ("CFG", "PMS"),
+        (0x06, 0x00): ("CFG", "PRT"),
+        (0x06, 0x57): ("CFG", "PWR"),
+        (0x06, 0x08): ("CFG", "RATE"),
+        (0x06, 0x34): ("CFG", "RINV"),  # poll contents of remote inventory
+        (0x06, 0x04): ("CFG", "RST"),
+        (0x06, 0x16): ("CFG", "SBAS"),
+        (0x06, 0x71): ("CFG", "TMODE3"),
+        (0x06, 0x31): ("CFG", "TP5"),
+        (0x06, 0x1b): ("CFG", "USB"),
+        (0x06, 0x8c): ("CFG", "VALDEL"),
+        (0x06, 0x8b): ("CFG", "VALGET"),
+        (0x06, 0x8a): ("CFG", "VALSET"),
         # ESF
-        (0x10, 0x14): "ALG",
-        (0x10, 0x15): "INS",
-        (0x10, 0x02): "MEAS",
-        (0x10, 0x03): "RAW",
-        (0x10, 0x13): "RESETALG",
-        (0x10, 0x10): "STATUS",
+        (0x10, 0x14): ("ESF", "ALG"),
+        (0x10, 0x15): ("ESF", "INS"),
+        (0x10, 0x02): ("ESF", "MEAS"),
+        (0x10, 0x03): ("ESF", "RAW"),
+        (0x10, 0x13): ("ESF", "RESETALG"),
+        (0x10, 0x10): ("ESF", "STATUS"),
         # HNR
-        (0x28, 0x01): "ATT",
-        (0x28, 0x02): "INS",
-        (0x28, 0x00): "PVT",
+        (0x28, 0x01): ("HNR", "ATT"),
+        (0x28, 0x02): ("HNR", "INS"),
+        (0x28, 0x00): ("HNR", "PVT"),
         # INF
-        (0x04, 0x04): "DEBUG",
-        (0x04, 0x00): "ERROR",
-        (0x04, 0x02): "NOTICE",
-        (0x04, 0x03): "TEST",
-        (0x04, 0x01): "WARNING",
+        (0x04, 0x04): ("INF", "DEBUG"),
+        (0x04, 0x00): ("INF", "ERROR"),
+        (0x04, 0x02): ("INF", "NOTICE"),
+        (0x04, 0x03): ("INF", "TEST"),
+        (0x04, 0x01): ("INF", "WARNING"),
         # LOG
-        (0x21, 0x07): "CREATE",
-        (0x21, 0x03): "ERASE",
-        (0x21, 0x0e): "FINDTIME",
-        (0x21, 0x08): "INFO",
-        (0x21, 0x09): "RETRIEVE",
-        (0x21, 0x0b): "RETRIEVEPOS",
-        (0x21, 0x0f): "RETRIEVEPOSEXTRA",
-        (0x21, 0x0d): "RETRIEVESTRING",
-        (0x21, 0x04): "STRING",
+        (0x21, 0x07): ("LOG", "CREATE"),
+        (0x21, 0x03): ("LOG", "ERASE"),
+        (0x21, 0x0e): ("LOG", "FINDTIME"),
+        (0x21, 0x08): ("LOG", "INFO"),
+        (0x21, 0x09): ("LOG", "RETRIEVE"),
+        (0x21, 0x0b): ("LOG", "RETRIEVEPOS"),
+        (0x21, 0x0f): ("LOG", "RETRIEVEPOSEXTRA"),
+        (0x21, 0x0d): ("LOG", "RETRIEVESTRING"),
+        (0x21, 0x04): ("LOG", "STRING"),
         # MGA
-        (0x13, 0x60): "ACK",
-        (0x13, 0x20): "ANO",
-        (0x13, 0x03): "BDS",
-        (0x13, 0x80): "DBD",
-        (0x13, 0x21): "FLASH",
-        (0x13, 0x02): "GAL",
-        (0x13, 0x06): "GLO",
-        (0x13, 0x00): "GPS",
-        (0x13, 0x40): "INI",
-        (0x13, 0x05): "QZSS",
+        (0x13, 0x60): ("MGA", "ACK"),
+        (0x13, 0x20): ("MGA", "ANO"),
+        (0x13, 0x03): ("MGA", "BDS"),
+        (0x13, 0x80): ("MGA", "DBD"),
+        (0x13, 0x21): ("MGA", "FLASH"),
+        (0x13, 0x02): ("MGA", "GAL"),
+        (0x13, 0x06): ("MGA", "GLO"),
+        (0x13, 0x00): ("MGA", "GPS"),
+        (0x13, 0x40): ("MGA", "INI"),
+        (0x13, 0x05): ("MGA", "QZSS"),
         # MON
-        (0x0a, 0x36): "COMMS",
-        (0x0a, 0x28): "GNSS",
-        (0x0a, 0x09): "HW",
-        (0x0a, 0x0b): "HW2",
-        (0x0a, 0x37): "HW3",
-        (0x0a, 0x02): "IO",
-        (0x0a, 0x06): "MSGPP",
-        (0x0a, 0x27): "PATCH",
-        (0x0a, 0x35): "PMP",
-        (0x0a, 0x2b): "PT2",
-        (0x0a, 0x38): "RF",
-        (0x0a, 0x07): "RXBUF",
-        (0x0a, 0x21): "RXR",
-        (0x0a, 0x2e): "SMGR",
-        (0x0a, 0x31): "SPAN",
-        (0x0a, 0x39): "SYS",
-        (0x0a, 0x0e): "TEMP",
-        (0x0a, 0x08): "TXBUF",
-        (0x0a, 0x04): "VER",
+        (0x0a, 0x36): ("MON", "COMMS"),
+        (0x0a, 0x28): ("MON", "GNSS"),
+        (0x0a, 0x09): ("MON", "HW"),
+        (0x0a, 0x0b): ("MON", "HW2"),
+        (0x0a, 0x37): ("MON", "HW3"),
+        (0x0a, 0x02): ("MON", "IO"),
+        (0x0a, 0x06): ("MON", "MSGPP"),
+        (0x0a, 0x27): ("MON", "PATCH"),
+        (0x0a, 0x35): ("MON", "PMP"),
+        (0x0a, 0x2b): ("MON", "PT2"),
+        (0x0a, 0x38): ("MON", "RF"),
+        (0x0a, 0x07): ("MON", "RXBUF"),
+        (0x0a, 0x21): ("MON", "RXR"),
+        (0x0a, 0x2e): ("MON", "SMGR"),
+        (0x0a, 0x31): ("MON", "SPAN"),
+        (0x0a, 0x39): ("MON", "SYS"),
+        (0x0a, 0x0e): ("MON", "TEMP"),
+        (0x0a, 0x08): ("MON", "TXBUF"),
+        (0x0a, 0x04): ("MON", "VER"),
         # NAV
-        (0x01, 0x05): "ATT",
-        (0x01, 0x60): "AOPSTATUS",
-        (0x01, 0x22): "CLOCK",
-        (0x01, 0x36): "COV",
-        (0x01, 0x31): "DGPS",
-        (0x01, 0x04): "DOP",
-        (0x01, 0x3d): "EELL",
-        (0x01, 0x61): "EOE",
-        (0x01, 0x39): "GEOFENCE",
-        (0x01, 0x37): "HNR",
-        (0x01, 0x13): "HPPOSECEF",
-        (0x01, 0x14): "HPPOSLLH",
-        (0x01, 0x28): "NMI",
-        (0x01, 0x09): "ODO",
-        (0x01, 0x34): "ORB",
-        (0x01, 0x62): "PL",
-        (0x01, 0x01): "POSECEF",
-        (0x01, 0x02): "POSLLH",
-        (0x01, 0x17): "PVAT",
-        (0x01, 0x07): "PVT",
-        (0x01, 0x3C): "RELPOSNED",
-        (0x01, 0x10): "RESETODO",
-        (0x01, 0x35): "SAT",
-        (0x01, 0x32): "SBAS",
-        (0x01, 0x43): "SIG",
-        (0x01, 0x42): "SLAS",
-        (0x01, 0x06): "SOL",
-        (0x01, 0x03): "STATUS",
-        (0x01, 0x3B): "SVIN",
-        (0x01, 0x30): "SVINFO",
-        (0x01, 0x24): "TIMEBDS",
-        (0x01, 0x25): "TIMEGAL",
-        (0x01, 0x23): "TIMEGLO",
-        (0x01, 0x20): "TIMEGPS",
-        (0x01, 0x26): "TIMELS",
-        (0x01, 0x21): "TIMEUTC",
-        (0x01, 0x63): "TIMENAVIC",
-        (0x01, 0x27): "TIMEQZSS",
-        (0x01, 0x64): "TIMETRUSTED",
-        (0x01, 0x11): "VELECEF",
-        (0x01, 0x12): "VELNED",
+        (0x01, 0x05): ("NAV", "ATT"),
+        (0x01, 0x60): ("NAV", "AOPSTATUS"),
+        (0x01, 0x22): ("NAV", "CLOCK"),
+        (0x01, 0x36): ("NAV", "COV"),
+        (0x01, 0x31): ("NAV", "DGPS"),
+        (0x01, 0x04): ("NAV", "DOP"),
+        (0x01, 0x3d): ("NAV", "EELL"),
+        (0x01, 0x61): ("NAV", "EOE"),
+        (0x01, 0x39): ("NAV", "GEOFENCE"),
+        (0x01, 0x37): ("NAV", "HNR"),
+        (0x01, 0x13): ("NAV", "HPPOSECEF"),
+        (0x01, 0x14): ("NAV", "HPPOSLLH"),
+        (0x01, 0x28): ("NAV", "NMI"),
+        (0x01, 0x09): ("NAV", "ODO"),
+        (0x01, 0x34): ("NAV", "ORB"),
+        (0x01, 0x62): ("NAV", "PL"),
+        (0x01, 0x01): ("NAV", "POSECEF"),
+        (0x01, 0x02): ("NAV", "POSLLH"),
+        (0x01, 0x17): ("NAV", "PVAT"),
+        (0x01, 0x07): ("NAV", "PVT"),
+        (0x01, 0x3C): ("NAV", "RELPOSNED"),
+        (0x01, 0x10): ("NAV", "RESETODO"),
+        (0x01, 0x35): ("NAV", "SAT"),
+        (0x01, 0x32): ("NAV", "SBAS"),
+        (0x01, 0x43): ("NAV", "SIG"),
+        (0x01, 0x42): ("NAV", "SLAS"),
+        (0x01, 0x06): ("NAV", "SOL"),
+        (0x01, 0x03): ("NAV", "STATUS"),
+        (0x01, 0x3B): ("NAV", "SVIN"),
+        (0x01, 0x30): ("NAV", "SVINFO"),
+        (0x01, 0x24): ("NAV", "TIMEBDS"),
+        (0x01, 0x25): ("NAV", "TIMEGAL"),
+        (0x01, 0x23): ("NAV", "TIMEGLO"),
+        (0x01, 0x20): ("NAV", "TIMEGPS"),
+        (0x01, 0x26): ("NAV", "TIMELS"),
+        (0x01, 0x21): ("NAV", "TIMEUTC"),
+        (0x01, 0x63): ("NAV", "TIMENAVIC"),
+        (0x01, 0x27): ("NAV", "TIMEQZSS"),
+        (0x01, 0x64): ("NAV", "TIMETRUSTED"),
+        (0x01, 0x11): ("NAV", "VELECEF"),
+        (0x01, 0x12): ("NAV", "VELNED"),
         # NAV2
-        (0x29, 0x22): "CLOCK",
-        (0x29, 0x36): "COV",
-        (0x29, 0x31): "DGPS",
-        (0x29, 0x04): "DOP",
-        (0x29, 0x61): "EOE",
-        (0x29, 0x3d): "EELL",
-        (0x29, 0x09): "ODO",
-        (0x29, 0x01): "POSECEF",
-        (0x29, 0x02): "POSLLH",
-        (0x29, 0x17): "PVAT",
-        (0x29, 0x07): "PVT",
-        (0x29, 0x35): "SAT",
-        (0x29, 0x32): "SBAS",
-        (0x29, 0x43): "SIG",
-        (0x29, 0x42): "SLAS",
-        (0x29, 0x03): "STATUS",
-        (0x29, 0x3b): "SVIN",
-        (0x29, 0x24): "TIMEBDS",
-        (0x29, 0x25): "TIMEGAL",
-        (0x29, 0x23): "TIMEGLO",
-        (0x29, 0x20): "TIMEGPS",
-        (0x29, 0x26): "TIMELS",
-        (0x29, 0x63): "TIMENAVIC",
-        (0x29, 0x21): "TIMEUTC",
-        (0x29, 0x27): "TIMEQZSS",
-        (0x29, 0x11): "VELECEF",
-        (0x29, 0x12): "VELNED",
+        (0x29, 0x22): ("NAV2", "CLOCK"),
+        (0x29, 0x36): ("NAV2", "COV"),
+        (0x29, 0x31): ("NAV2", "DGPS"),
+        (0x29, 0x04): ("NAV2", "DOP"),
+        (0x29, 0x61): ("NAV2", "EOE"),
+        (0x29, 0x3d): ("NAV2", "EELL"),
+        (0x29, 0x09): ("NAV2", "ODO"),
+        (0x29, 0x01): ("NAV2", "POSECEF"),
+        (0x29, 0x02): ("NAV2", "POSLLH"),
+        (0x29, 0x17): ("NAV2", "PVAT"),
+        (0x29, 0x07): ("NAV2", "PVT"),
+        (0x29, 0x35): ("NAV2", "SAT"),
+        (0x29, 0x32): ("NAV2", "SBAS"),
+        (0x29, 0x43): ("NAV2", "SIG"),
+        (0x29, 0x42): ("NAV2", "SLAS"),
+        (0x29, 0x03): ("NAV2", "STATUS"),
+        (0x29, 0x3b): ("NAV2", "SVIN"),
+        (0x29, 0x24): ("NAV2", "TIMEBDS"),
+        (0x29, 0x25): ("NAV2", "TIMEGAL"),
+        (0x29, 0x23): ("NAV2", "TIMEGLO"),
+        (0x29, 0x20): ("NAV2", "TIMEGPS"),
+        (0x29, 0x26): ("NAV2", "TIMELS"),
+        (0x29, 0x63): ("NAV2", "TIMENAVIC"),
+        (0x29, 0x21): ("NAV2", "TIMEUTC"),
+        (0x29, 0x27): ("NAV2", "TIMEQZSS"),
+        (0x29, 0x11): ("NAV2", "VELECEF"),
+        (0x29, 0x12): ("NAV2", "VELNED"),
         # RXM
-        (0x02, 0x34): "COR",
-        (0x02, 0x84): "MEAS20",
-        (0x02, 0x86): "MEAS50",
-        (0x02, 0x82): "MEASC12",
-        (0x02, 0x80): "MEASD12",
-        (0x02, 0x14): "MEASX",
-        (0x02, 0x72): "PMP",
-        (0x02, 0x41): "PMREQ",
-        (0x02, 0x73): "QZSSL6",
-        (0x02, 0x15): "RAWX",
-        (0x02, 0x59): "RLM",
-        (0x02, 0x32): "RTCM",
-        (0x02, 0x13): "SFRBX",
-        (0x02, 0x33): "SPARTN",
-        (0x02, 0x36): "SPARTNKEY",
+        (0x02, 0x34): ("RXM", "COR"),
+        (0x02, 0x84): ("RXM", "MEAS20"),
+        (0x02, 0x86): ("RXM", "MEAS50"),
+        (0x02, 0x82): ("RXM", "MEASC12"),
+        (0x02, 0x80): ("RXM", "MEASD12"),
+        (0x02, 0x14): ("RXM", "MEASX"),
+        (0x02, 0x72): ("RXM", "PMP"),
+        (0x02, 0x41): ("RXM", "PMREQ"),
+        (0x02, 0x73): ("RXM", "QZSSL6"),
+        (0x02, 0x15): ("RXM", "RAWX"),
+        (0x02, 0x59): ("RXM", "RLM"),
+        (0x02, 0x32): ("RXM", "RTCM"),
+        (0x02, 0x13): ("RXM", "SFRBX"),
+        (0x02, 0x33): ("RXM", "SPARTN"),
+        (0x02, 0x36): ("RXM", "SPARTNKEY"),
         # SEC
-        (0x27, 0x04): "ECSIGN",
-        (0x27, 0x0A): "OSNMA",
-        (0x27, 0x05): "SESSID",
-        (0x27, 0x09): "SIG",
-        (0x27, 0x10): "SIGLOG",
-        (0x27, 0x01): "SIGN",
-        (0x27, 0x03): "UNIQID",
+        (0x27, 0x04): ("SEC", "ECSIGN"),
+        (0x27, 0x0A): ("SEC", "OSNMA"),
+        (0x27, 0x05): ("SEC", "SESSID"),
+        (0x27, 0x09): ("SEC", "SIG"),
+        (0x27, 0x10): ("SEC", "SIGLOG"),
+        (0x27, 0x01): ("SEC", "SIGN"),
+        (0x27, 0x03): ("SEC", "UNIQID"),
         # TIM
-        (0x0d, 0x11): "DOSC",
-        (0x0d, 0x16): "FCHG",
-        (0x0d, 0x17): "HOC",
-        (0x0d, 0x13): "SMEAS",
-        (0x0d, 0x04): "SVIN",
-        (0x0d, 0x05): "SYNC",
-        (0x0d, 0x03): "TM2",
-        (0x0d, 0x12): "TOS",
-        (0x0d, 0x01): "TP",
-        (0x0d, 0x15): "VCOCAL",
-        (0x0d, 0x06): "VRFY",
+        (0x0d, 0x11): ("TIM", "DOSC"),
+        (0x0d, 0x16): ("TIM", "FCHG"),
+        (0x0d, 0x17): ("TIM", "HOC"),
+        (0x0d, 0x13): ("TIM", "SMEAS"),
+        (0x0d, 0x04): ("TIM", "SVIN"),
+        (0x0d, 0x05): ("TIM", "SYNC"),
+        (0x0d, 0x03): ("TIM", "TM2"),
+        (0x0d, 0x12): ("TIM", "TOS"),
+        (0x0d, 0x01): ("TIM", "TP"),
+        (0x0d, 0x15): ("TIM", "VCOCAL"),
+        (0x0d, 0x06): ("TIM", "VRFY"),
         # UPD
-        (0x09, 0x14): "SOS"
+        (0x09, 0x14): ("UPD", "SOS" )
     }
 
     class_key_list = list(UBX_CLASS.keys())
@@ -503,20 +503,25 @@ class Hla(HighLevelAnalyzer):
         else:
             return False, None
 
+    def get_ubx_class(self, class_name):
+        if class_name in self.class_val_list:
+            return self.class_key_list[self.class_val_list.index(class_name)]
+        return None
+    
+    def get_ubx_class_and_id(self, class_name, id_name):
+        if (class_name, id_name) in self.id_val_list:
+            return self.id_key_list[self.id_val_list.index((class_name, id_name))]
+        return (None,None)
+
     def analyze_ubx(self, frame, value):
         """
         Analyze frame according to the UBX interface description
-
-        Note to self: If/when NAV2 is added, self.id_val_list.index("CLOCK") etc. will find the index for NAV, not NAV2.
         """
 
-        class_position = self.class_val_list.index("ACK")
-        if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == ACK
+        if self.msg_class == self.get_ubx_class("ACK"):  # if self.msg_class == ACK
 
-            id_position_1 = self.id_val_list.index("ACK")
-            id_position_2 = self.id_val_list.index("NACK")
-            if ((self.msg_class, self.ID) == self.id_key_list[id_position_1]) or (
-                    (self.msg_class, self.ID) == self.id_key_list[id_position_2]):  # if self.ID == ACK or NACK
+            if ((self.msg_class, self.ID) == self.get_ubx_class_and_id("ACK","ACK")) or (
+                    (self.msg_class, self.ID) == self.get_ubx_class_and_id("ACK","NACK")):  # if self.ID == ACK or NACK
 
                 if self.this_is_byte == 0:
                     self.ack_class = value
@@ -527,7 +532,7 @@ class Hla(HighLevelAnalyzer):
                     return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': class_str})
                 elif self.this_is_byte == 1:
                     if (self.ack_class, value) in self.UBX_ID:
-                        id_str = self.UBX_ID[self.ack_class, value]
+                        id_str = self.UBX_ID[self.ack_class, value][1]
                     else:
                         id_str = 'ID'
                     return AnalyzerFrame('message', frame.start_time, frame.end_time,
@@ -535,11 +540,9 @@ class Hla(HighLevelAnalyzer):
                 else:
                     return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': '?'})
 
-        class_position = self.class_val_list.index("CFG")
-        if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == CFG
+        elif self.msg_class == self.get_ubx_class("CFG"):  # if self.msg_class == CFG
 
-            id_position = self.id_val_list.index("PRT")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == PRT
+            if (self.msg_class, self.ID) == self.get_ubx_class_and_id("CFG","PRT"):  # if self.ID == PRT
 
                 # there are both messages with lengths 1 and 20 on M6 _and_ M8, they almost completely match
                 if self.length_MSB == 0 and (self.length_LSB == 20 or self.length_LSB == 1):
@@ -585,8 +588,7 @@ class Hla(HighLevelAnalyzer):
                         return field
 
 
-            id_position = self.id_val_list.index("MSG")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == MSG
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("CFG","MSG"):  # if self.ID == MSG
 
                 # there are messages with lengths 2, 3 and 8 on M6 _and_ M8, the field sizes and names completely match
                 if self.length_MSB == 0 and self.length_LSB in [2, 3, 8]:
@@ -608,8 +610,7 @@ class Hla(HighLevelAnalyzer):
                         if success:
                             return field
 
-            id_position = self.id_val_list.index("RST")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == RST
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("CFG","RST"):  # if self.ID == RST
 
                 # there are messages with length 4 on M6 _and_ M8, the field sizes and names completely match
                 if self.length_MSB == 0 and self.length_LSB == 4:
@@ -623,12 +624,47 @@ class Hla(HighLevelAnalyzer):
                     if success:
                         return field
 
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("CFG","VALSET"):  # if self.ID == VALSET
 
-        class_position = self.class_val_list.index("MON")
-        if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == MON
+                success, field = self.analyze_unsigned(value, frame, 0, 0, 'version ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_unsigned(value, frame, 1, 1, 'layers ', 'hex')
+                if success:
+                    return field
+                
+                success, field = self.analyze_unsigned(value, frame, 4, 7, 'key[0] ', 'hex')
+                if success:
+                    return field
 
-            id_position = self.id_val_list.index("HW")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == HW
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("CFG","VALGET"):  # if self.ID == VALGET
+
+                success, field = self.analyze_unsigned(value, frame, 0, 0, 'version ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_unsigned(value, frame, 1, 1, 'layers ', 'hex')
+                if success:
+                    return field
+                success, field = self.analyze_unsigned(value, frame, 4, 7, 'key[0] ', 'hex')
+                if success:
+                    return field
+
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("CFG","VALDEL"):  # if self.ID == VALDEL
+
+                success, field = self.analyze_unsigned(value, frame, 0, 0, 'version ', 'dec')
+                if success:
+                    return field
+                success, field = self.analyze_unsigned(value, frame, 1, 1, 'layers ', 'hex')
+                if success:
+                    return field
+                success, field = self.analyze_unsigned(value, frame, 4, 7, 'key[0] ', 'hex')
+                if success:
+                    return field
+
+
+        elif self.msg_class == self.get_ubx_class("MON"):  # if self.msg_class == MON
+
+            if (self.msg_class, self.ID) == self.get_ubx_class_and_id("MON","HW"):  # if self.ID == HW
 
                 # M8: 60 Bytes (VP is 17 bytes). M6: 68 Bytes (VP is 25 bytes).
                 success, field = self.analyze_unsigned(value, frame, 0, 3, 'pinSel ', 'hex')
@@ -686,8 +722,7 @@ class Hla(HighLevelAnalyzer):
                 if success:
                     return field
 
-            id_position = self.id_val_list.index("VER")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == VER
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("MON","VER"):  # if self.ID == VER
                 # M6 sends swVersion[30], hwVersion[10], romVersion[30], extension[30 * N]
                 # M8 sends swVersion[30], hwVersion[10], extension[30 * N]
 
@@ -717,11 +752,9 @@ class Hla(HighLevelAnalyzer):
                         return field
 
                 
-        class_position = self.class_val_list.index("NAV")
-        if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == NAV
+        elif self.msg_class == self.get_ubx_class("NAV"):  # if self.msg_class == NAV
 
-            id_position = self.id_val_list.index("POSECEF")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == POSECEF
+            if (self.msg_class, self.ID) == self.get_ubx_class_and_id("NAV","POSECEF"):  # if self.ID == POSECEF
 
                 success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
                 if success:
@@ -739,8 +772,7 @@ class Hla(HighLevelAnalyzer):
                 if success:
                     return field
 
-            id_position = self.id_val_list.index("POSLLH")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == POSLLH
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("NAV","POSLLH"):  # if self.ID == POSLLH
 
                 success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
                 if success:
@@ -764,8 +796,7 @@ class Hla(HighLevelAnalyzer):
                 if success:
                     return field
 
-            id_position = self.id_val_list.index("PVT")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == PVT
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("NAV","PVT"):  # if self.ID == PVT
 
                 success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
                 if success:
@@ -867,8 +898,7 @@ class Hla(HighLevelAnalyzer):
                 if success:
                     return field
 
-            id_position = self.id_val_list.index("STATUS")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == STATUS
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("NAV","STATUS"):  # if self.ID == STATUS
 
                 success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
                 if success:
@@ -892,8 +922,7 @@ class Hla(HighLevelAnalyzer):
                 if success:
                     return field
 
-            id_position = self.id_val_list.index("TIMEGPS")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == TIMEGPS
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("NAV","TIMEGPS"):  # if self.ID == TIMEGPS
 
                 success, field = self.analyze_unsigned(value, frame, 0, 3, 'iTOW ', 'dec')
                 if success:
@@ -914,11 +943,9 @@ class Hla(HighLevelAnalyzer):
                 if success:
                     return field
 
-        class_position = self.class_val_list.index("RXM")
-        if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == RXM
+        elif self.msg_class == self.get_ubx_class("RXM"):  # if self.msg_class == RXM
 
-            id_position = self.id_val_list.index("PMP")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == PMP
+            if (self.msg_class, self.ID) == self.get_ubx_class_and_id("RXM","PMP"):  # if self.ID == PMP
 
                 success, field = self.analyze_unsigned(value, frame, 0, 0, 'version ', 'dec')
                 if success:
@@ -989,25 +1016,21 @@ class Hla(HighLevelAnalyzer):
                         return AnalyzerFrame('message', self.start_time, frame.end_time, {'str': 'userData'})
                     return None
 
-        class_position = self.class_val_list.index("INF")
-        if self.msg_class == self.class_key_list[class_position]:  # if self.msg_class == INF
+        elif self.msg_class == self.get_ubx_class("INF"):  # if self.msg_class == INF
 
-            id_position = self.id_val_list.index("NOTICE")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == NOTICE
+            if (self.msg_class, self.ID) == self.get_ubx_class_and_id("INF","NOTICE"):  # if self.ID == NOTICE
 
                 success, field = self.analyze_string(value, frame, 0, self.length_LSB + (self.length_MSB << 8) - 1)
                 if success:
                     return field
 
-            id_position = self.id_val_list.index("ERROR")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == ERROR
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("INF","ERROR"):  # if self.ID == ERROR
 
                 success, field = self.analyze_string(value, frame, 0, self.length_LSB + (self.length_MSB << 8) - 1)
                 if success:
                     return field
 
-            id_position = self.id_val_list.index("WARNING")
-            if (self.msg_class, self.ID) == self.id_key_list[id_position]:  # if self.ID == WARNING
+            elif (self.msg_class, self.ID) == self.get_ubx_class_and_id("INF","WARNING"):  # if self.ID == WARNING
 
                 success, field = self.analyze_string(value, frame, 0, self.length_LSB + (self.length_MSB << 8) - 1)
                 if success:
@@ -1195,7 +1218,7 @@ class Hla(HighLevelAnalyzer):
             self.ID = value
             self.csum_ubx(value)
             if (self.msg_class, self.ID) in self.UBX_ID:
-                id_str = self.UBX_ID[self.msg_class, self.ID]
+                id_str = self.UBX_ID[self.msg_class, self.ID][1]
             else:
                 id_str = 'ID'
             return AnalyzerFrame('message', frame.start_time, frame.end_time, {'str': id_str})
