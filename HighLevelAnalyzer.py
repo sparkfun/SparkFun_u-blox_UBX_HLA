@@ -1346,29 +1346,38 @@ class Hla(HighLevelAnalyzer):
 
         # Check for RTCM Length LSB
         elif self.decode_state == self.looking_for_RTCM_len2:
-            self.decode_state = self.looking_for_RTCM_type1
             self.length_LSB = value
             self.bytes_to_process = self.length_MSB * 256 + self.length_LSB
             self.this_is_byte = 0
             self.csum_rtcm(value)
+            if self.bytes_to_process > 0:
+                self.decode_state = self.looking_for_RTCM_type1
+            else:
+                self.decode_state = self.looking_for_RTCM_csum1
             return AnalyzerFrame('message', self.start_time, frame.end_time,
                                  {'str': 'Length ' + str(self.bytes_to_process)})
 
         # Check for RTCM Type MSB
         elif self.decode_state == self.looking_for_RTCM_type1:
-            self.decode_state = self.looking_for_RTCM_type2
             self.rtcm_type = value
             self.this_is_byte = self.this_is_byte + 1
             self.csum_rtcm(value)
             self.start_time = frame.start_time
+            if self.this_is_byte == self.bytes_to_process:
+                self.decode_state = self.looking_for_RTCM_csum1
+            else:
+                self.decode_state = self.looking_for_RTCM_type2
             return None
 
         # Check for RTCM Type LSB
         elif self.decode_state == self.looking_for_RTCM_type2:
-            self.decode_state = self.processing_RTCM_payload
             self.rtcm_type = (self.rtcm_type << 4) | (value >> 4)
             self.this_is_byte = self.this_is_byte + 1
             self.csum_rtcm(value)
+            if self.this_is_byte == self.bytes_to_process:
+                self.decode_state = self.looking_for_RTCM_csum1
+            else:
+                self.decode_state = self.processing_RTCM_payload
             return AnalyzerFrame('message', self.start_time, frame.end_time,
                                  {'str': 'Type ' + str(self.rtcm_type)})
 
